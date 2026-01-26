@@ -2,13 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
 import { INITIAL_DATA } from './initialData';
 
-/**
- * Trump Administration Accountability Tracker
- * 
- * Data is stored in Supabase and auto-updated via Gemini AI
- * Live counters for debt and time run client-side
- */
-
 function App() {
   const [data, setData] = useState(INITIAL_DATA);
   const [loading, setLoading] = useState(true);
@@ -16,110 +9,48 @@ function App() {
   const [now, setNow] = useState(Date.now());
   const [activeTab, setActiveTab] = useState('overview');
   
-  // Update time 10x per second for smooth counters
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 100);
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch data from Supabase on load
   useEffect(() => {
     fetchData();
-    
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('tracker-updates')
-      .on('postgres_changes', 
-        { event: 'UPDATE', schema: 'public', table: 'tracker_data' },
-        (payload) => {
-          console.log('Realtime update received:', payload);
-          if (payload.new?.data) {
-            setData(payload.new.data);
-            setLastSync(new Date().toISOString());
-          }
-        }
-      )
+    const channel = supabase.channel('tracker-updates')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tracker_data' },
+        (payload) => { if (payload.new?.data) { setData(payload.new.data); setLastSync(new Date().toISOString()); } })
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, []);
 
   async function fetchData() {
     try {
-      const { data: result, error } = await supabase
-        .from('tracker_data')
-        .select('data, updated_at')
-        .eq('id', 'main')
-        .single();
-      
+      const { data: result, error } = await supabase.from('tracker_data').select('data, updated_at').eq('id', 'main').single();
       if (error) throw error;
-      
-      if (result?.data && Object.keys(result.data).length > 0) {
-        setData(result.data);
-        setLastSync(result.updated_at);
-      } else {
-        // Seed initial data if empty
-        await seedInitialData();
-      }
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      // Use fallback data
-    } finally {
-      setLoading(false);
-    }
+      if (result?.data && Object.keys(result.data).length > 0) { setData(result.data); setLastSync(result.updated_at); }
+    } catch (err) { console.error('Error:', err); }
+    finally { setLoading(false); }
   }
 
-  async function seedInitialData() {
-    try {
-      const { error } = await supabase
-        .from('tracker_data')
-        .upsert({ id: 'main', data: INITIAL_DATA, updated_at: new Date().toISOString() });
-      
-      if (error) throw error;
-      console.log('Seeded initial data');
-    } catch (err) {
-      console.error('Error seeding data:', err);
-    }
-  }
-
-  // ---- CALCULATIONS ----
-  
   const INAUGURATION = new Date('2025-01-20T17:00:00Z');
-  
   const liveDebt = useMemo(() => {
     const baselineDate = new Date(data.debt?.baselineDate || '2026-01-07T00:00:00Z');
-    const secSinceBaseline = (now - baselineDate.getTime()) / 1000;
-    return ((data.debt?.baseline || 38.43) * 1e12) + (secSinceBaseline * (data.debt?.perSecond || 92912.33));
+    return ((data.debt?.baseline || 38.43) * 1e12) + (((now - baselineDate.getTime()) / 1000) * (data.debt?.perSecond || 92912.33));
   }, [now, data.debt]);
-  
   const debtSinceInauguration = liveDebt - ((data.debt?.atInauguration || 36.18) * 1e12);
-  
   const timeSinceInauguration = useMemo(() => {
     const sec = Math.floor((now - INAUGURATION.getTime()) / 1000);
-    return {
-      days: Math.floor(sec / 86400),
-      hours: Math.floor((sec % 86400) / 3600),
-      minutes: Math.floor((sec % 3600) / 60),
-      seconds: sec % 60,
-    };
+    return { days: Math.floor(sec / 86400), hours: Math.floor((sec % 86400) / 3600), minutes: Math.floor((sec % 3600) / 60), seconds: sec % 60 };
   }, [now]);
   
   const wealthGain = (data.wealth?.current || 6.6) - (data.wealth?.previous || 2.3);
   const wealthGainPercent = Math.round((wealthGain / (data.wealth?.previous || 2.3)) * 100);
-  
   const golf = data.golf || {};
-  const totalGolfCost = ((golf.marALagoTrips || 0) * (golf.marALagoCost || 0)) +
-                        ((golf.bedminsterTrips || 0) * (golf.bedminsterCost || 0)) +
-                        ((golf.scotlandTrips || 0) * (golf.scotlandCost || 0));
-  
+  const totalGolfCost = ((golf.marALagoTrips || 0) * (golf.marALagoCost || 0)) + ((golf.bedminsterTrips || 0) * (golf.bedminsterCost || 0)) + ((golf.scotlandTrips || 0) * (golf.scotlandCost || 0));
   const totalTrips = (golf.marALagoTrips || 0) + (golf.bedminsterTrips || 0) + (golf.scotlandTrips || 0);
   const selfDealing = data.selfDealing || {};
   const selfDealingFromGolf = totalTrips * (selfDealing.revenuePerTrip || 60000);
 
-  // ---- HELPERS ----
-  
   const fmt = (val, dec = 2) => {
     if (val >= 1e12) return `$${(val / 1e12).toFixed(dec)}T`;
     if (val >= 1e9) return `$${(val / 1e9).toFixed(dec)}B`;
@@ -127,669 +58,264 @@ function App() {
     if (val >= 1e3) return `$${(val / 1e3).toFixed(dec)}K`;
     return `$${val.toLocaleString()}`;
   };
-  
   const pad = (n) => String(n).padStart(2, '0');
-
-  // ---- STYLES ----
-  
-  const styles = {
-    container: {
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%)',
-      fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
-      color: '#e0e0e0',
-      padding: '20px',
-    },
-    grid: {
-      position: 'fixed',
-      inset: 0,
-      backgroundImage: 'linear-gradient(rgba(255,50,50,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,50,50,0.03) 1px, transparent 1px)',
-      backgroundSize: '50px 50px',
-      pointerEvents: 'none',
-      zIndex: 0,
-    },
-    content: {
-      position: 'relative',
-      zIndex: 1,
-      maxWidth: '1400px',
-      margin: '0 auto',
-    },
-    card: (color) => ({
-      background: `linear-gradient(145deg, ${color}12 0%, rgba(0,0,0,0.4) 100%)`,
-      border: `1px solid ${color}40`,
-      borderRadius: '12px',
-      padding: '24px',
-      marginBottom: '20px',
-    }),
-    cardStrong: (color) => ({
-      background: `linear-gradient(145deg, ${color}18 0%, rgba(0,0,0,0.5) 100%)`,
-      border: `2px solid ${color}60`,
-      borderRadius: '12px',
-      padding: '24px',
-      marginBottom: '20px',
-      position: 'relative',
-    }),
-  };
-  
-  const tabs = [
-    { id: 'overview', label: '📊 Overview' },
-    { id: 'promises', label: '❌ Broken Promises' },
-    { id: 'self-dealing', label: '💰 Self-Dealing' },
-    { id: 'ice', label: '⚠️ ICE Deaths' },
-    { id: 'sources', label: '📑 Sources' },
-  ];
-
-  if (loading) {
-    return (
-      <div style={{ ...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '16px' }}>Loading tracker data...</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>Connecting to database</div>
-        </div>
-      </div>
-    );
-  }
 
   const iceVictims = data.iceVictims || [];
   const iceStats = data.iceStats || {};
   const brokenPromises = data.brokenPromises || [];
   const wealth = data.wealth || {};
 
+  if (loading) return <div style={{ minHeight: '100vh', background: '#0f0f14', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', color: '#888' }}>Loading...</div>;
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'promises', label: 'Broken Promises', icon: '❌' },
+    { id: 'money', label: 'Follow the Money', icon: '💰' },
+    { id: 'ice', label: 'ICE Deaths', icon: '⚠️' },
+    { id: 'sources', label: 'Sources', icon: '📑' },
+  ];
+
+  const Card = ({ children, style }) => <div style={{ background: '#16161e', borderRadius: '12px', padding: '24px', border: '1px solid #252530', ...style }}>{children}</div>;
+
   return (
-    <div style={styles.container}>
-      <div style={styles.grid} />
-      
-      <div style={styles.content}>
-        {/* ---- HEADER ---- */}
-        <header style={{ textAlign: 'center', padding: '30px 20px', marginBottom: '20px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '4px', color: '#ff3333', marginBottom: '12px' }}>
-            ◆ ACCOUNTABILITY DASHBOARD ◆
+    <div style={{ minHeight: '100vh', background: '#0f0f14', fontFamily: 'Inter, -apple-system, sans-serif', color: '#e8e8ed', lineHeight: 1.6 }}>
+      {/* Header */}
+      <header style={{ borderBottom: '1px solid #1e1e28', padding: '24px 20px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite' }} />
+            <span style={{ fontSize: '11px', letterSpacing: '2px', color: '#ef4444', fontWeight: '600' }}>LIVE ACCOUNTABILITY TRACKER</span>
           </div>
-          <h1 style={{
-            fontSize: 'clamp(24px, 5vw, 52px)',
-            fontWeight: '900',
-            background: 'linear-gradient(135deg, #fff 0%, #888 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            margin: '0 0 8px 0',
-            letterSpacing: '-1px',
-          }}>
-            TRUMP ADMINISTRATION
-          </h1>
-          <p style={{ fontSize: '12px', color: '#666', margin: '0 0 20px 0' }}>
-            Objective facts • Verifiable sources • Auto-updated
-          </p>
-          
-          {/* Sync status */}
-          {lastSync && (
-            <div style={{ fontSize: '10px', color: '#444', marginBottom: '12px' }}>
-              Last sync: {new Date(lastSync).toLocaleString()}
-            </div>
-          )}
-          
-          {/* Time counter */}
-          <div style={{
-            display: 'inline-block',
-            padding: '12px 24px',
-            background: 'rgba(255,255,255,0.05)',
-            borderRadius: '8px',
-            border: '1px solid rgba(255,255,255,0.1)',
-          }}>
-            <div style={{ fontSize: '10px', color: '#666', letterSpacing: '2px', marginBottom: '4px' }}>
-              TIME SINCE INAUGURATION (JAN 20, 2025)
-            </div>
-            <div style={{ fontSize: '22px', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums', color: '#fff' }}>
+          <h1 style={{ fontSize: 'clamp(28px, 5vw, 42px)', fontWeight: '700', color: '#fff', margin: '0 0 4px 0' }}>Trump Administration</h1>
+          <p style={{ fontSize: '14px', color: '#6b6b7b', margin: 0 }}>Facts with sources. Updated automatically.</p>
+          <div style={{ marginTop: '20px', display: 'inline-flex', alignItems: 'center', gap: '16px', padding: '12px 20px', background: '#16161e', borderRadius: '8px', border: '1px solid #1e1e28' }}>
+            <span style={{ fontSize: '12px', color: '#6b6b7b' }}>Term to Date:</span>
+            <span style={{ fontSize: '20px', fontWeight: '600', fontFamily: 'JetBrains Mono, monospace', color: '#fff' }}>
               {timeSinceInauguration.days}d {pad(timeSinceInauguration.hours)}h {pad(timeSinceInauguration.minutes)}m {pad(timeSinceInauguration.seconds)}s
-            </div>
+            </span>
           </div>
-        </header>
+          {lastSync && <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>Last sync: {new Date(lastSync).toLocaleString()}</div>}
+        </div>
+      </header>
 
-        {/* ---- TABS ---- */}
-        <nav style={{
-          display: 'flex',
-          gap: '8px',
-          marginBottom: '24px',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-        }}>
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '10px 16px',
-                background: activeTab === tab.id ? 'rgba(255,50,50,0.2)' : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${activeTab === tab.id ? '#ff3333' : 'rgba(255,255,255,0.1)'}`,
-                borderRadius: '6px',
-                color: activeTab === tab.id ? '#ff5555' : '#888',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: activeTab === tab.id ? 'bold' : 'normal',
-                fontFamily: 'inherit',
-                transition: 'all 0.2s',
-              }}
-            >
-              {tab.label}
-            </button>
+      {/* Nav */}
+      <nav style={{ borderBottom: '1px solid #1e1e28', background: '#0f0f14', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '4px', padding: '8px 20px', overflowX: 'auto' }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+              padding: '10px 16px', background: activeTab === t.id ? '#1e1e28' : 'transparent', border: 'none', borderRadius: '6px',
+              color: activeTab === t.id ? '#fff' : '#6b6b7b', cursor: 'pointer', fontSize: '13px', fontWeight: activeTab === t.id ? '600' : '400', fontFamily: 'inherit', whiteSpace: 'nowrap'
+            }}><span style={{ marginRight: '6px' }}>{t.icon}</span>{t.label}</button>
           ))}
-        </nav>
+        </div>
+      </nav>
 
-        {/* ============ OVERVIEW TAB ============ */}
-        {activeTab === 'overview' && (
-          <>
-            {/* Main stats grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-              
-              {/* LIVE DEBT */}
-              <div style={styles.cardStrong('#ff3333')}>
-                <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff3333', animation: 'pulse 1s infinite' }} />
-                  <span style={{ fontSize: '10px', color: '#ff3333', letterSpacing: '1px' }}>LIVE</span>
-                </div>
-                <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#ff6666', marginBottom: '8px' }}>TOTAL U.S. NATIONAL DEBT</div>
-                <div style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: '900', color: '#ff3333', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-                  ${(liveDebt / 1e12).toFixed(6)}T
-                </div>
-                <div style={{ fontSize: '12px', color: '#ff6666', marginTop: '8px' }}>
-                  <span style={{ animation: 'blink 0.5s infinite' }}>+</span> {fmt(data.debt?.perSecond || 92912.33, 0)}/second
-                </div>
-                <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>INCREASE SINCE INAUGURATION</div>
-                  <div style={{ fontSize: '24px', fontWeight: '900', color: '#ff3333' }}>+{fmt(debtSinceInauguration)}</div>
-                </div>
-                <div style={{ marginTop: '12px', fontSize: '11px', color: '#666' }}>
-                  Per household: ${(data.debt?.perHousehold || 285127).toLocaleString()}
-                </div>
+      {/* Main */}
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 20px' }}>
+        
+        {/* OVERVIEW */}
+        {activeTab === 'overview' && <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+            {/* Debt */}
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <span style={{ fontSize: '13px', color: '#6b6b7b' }}>U.S. National Debt</span>
+                <span style={{ fontSize: '10px', color: '#ef4444', background: 'rgba(239,68,68,0.15)', padding: '4px 8px', borderRadius: '4px', fontWeight: '600' }}>● LIVE</span>
               </div>
-              
-              {/* WEALTH */}
-              <div style={styles.card('#00ff66')}>
-                <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#00ff66', marginBottom: '8px' }}>TRUMP PERSONAL NET WORTH</div>
-                <div style={{ fontSize: 'clamp(32px, 5vw, 44px)', fontWeight: '900', color: '#00ff66', lineHeight: 1 }}>
-                  ${wealth.current || 6.6}B
-                </div>
-                <div style={{ fontSize: '11px', color: '#666', marginTop: '8px' }}>{wealth.source || 'Forbes'} estimate • Rank #{wealth.rank || 581}</div>
-                <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>GAIN SINCE JAN 2024 (PRE-TERM)</div>
-                  <div style={{ fontSize: '24px', fontWeight: '900', color: '#00ff66' }}>
-                    +${wealthGain.toFixed(1)}B <span style={{ fontSize: '14px', color: '#00cc55' }}>(+{wealthGainPercent}%)</span>
-                  </div>
-                </div>
+              <div style={{ fontSize: '32px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>${(liveDebt / 1e12).toFixed(6)}T</div>
+              <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '8px' }}>+{fmt(data.debt?.perSecond || 92912.33, 0)}/second</div>
+              <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(239,68,68,0.08)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b7b' }}>Added Term to Date</div>
+                <div style={{ fontSize: '20px', fontWeight: '700', color: '#ef4444', marginTop: '4px' }}>+{fmt(debtSinceInauguration)}</div>
               </div>
-              
-              {/* BROKEN PROMISES */}
-              <div style={styles.card('#ff6600')}>
-                <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#ff6600', marginBottom: '8px' }}>CAMPAIGN PROMISES</div>
-                <div style={{ fontSize: 'clamp(32px, 5vw, 44px)', fontWeight: '900', color: '#ff6600', lineHeight: 1 }}>
-                  {brokenPromises.filter(p => p.status === 'BROKEN').length}/{brokenPromises.length}
-                </div>
-                <div style={{ fontSize: '14px', color: '#ff6600', marginTop: '4px' }}>BROKEN</div>
-                <div style={{ marginTop: '16px' }}>
-                  {brokenPromises.slice(0, 3).map(p => (
-                    <div key={p.id} style={{
-                      fontSize: '11px',
-                      color: '#888',
-                      padding: '6px 0',
-                      borderBottom: '1px solid rgba(255,255,255,0.05)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}>
-                      <span style={{ color: p.statusColor }}>✗</span>
-                      <span style={{ flex: 1 }}>{p.promise?.length > 35 ? p.promise.substring(0, 35) + '...' : p.promise}</span>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setActiveTab('promises')}
-                  style={{
-                    marginTop: '12px',
-                    padding: '8px 16px',
-                    background: 'rgba(255,102,0,0.2)',
-                    border: '1px solid #ff6600',
-                    borderRadius: '4px',
-                    color: '#ff6600',
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  View All Promises →
-                </button>
+            </Card>
+            {/* Wealth */}
+            <Card>
+              <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Trump Personal Net Worth</div>
+              <div style={{ fontSize: '32px', fontWeight: '700', color: '#22c55e' }}>${wealth.current || 6.6}B</div>
+              <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '8px' }}>Forbes • Rank #{wealth.rank || 581}</div>
+              <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(34,197,94,0.08)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b7b' }}>Gained Since Jan 2024</div>
+                <div style={{ fontSize: '20px', fontWeight: '700', color: '#22c55e', marginTop: '4px' }}>+${wealthGain.toFixed(1)}B (+{wealthGainPercent}%)</div>
               </div>
-            </div>
+            </Card>
+            {/* Promises */}
+            <Card>
+              <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Campaign Promises</div>
+              <div style={{ fontSize: '32px', fontWeight: '700', color: '#f97316' }}>{brokenPromises.filter(p => p.status === 'BROKEN').length}/{brokenPromises.length}</div>
+              <div style={{ fontSize: '14px', color: '#f97316', marginTop: '8px' }}>Broken</div>
+              <button onClick={() => setActiveTab('promises')} style={{ marginTop: '16px', width: '100%', padding: '10px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '6px', color: '#f97316', fontSize: '12px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit' }}>View All →</button>
+            </Card>
+          </div>
 
-            {/* THE CONTRAST */}
-            <div style={{
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '12px',
-              padding: '32px',
-              marginBottom: '24px',
-              textAlign: 'center',
-            }}>
-              <h3 style={{ fontSize: '12px', letterSpacing: '3px', color: '#666', marginBottom: '24px' }}>THE CONTRAST</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '24px' }}>
-                <div>
-                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>TRUMP'S WEALTH GAIN</div>
-                  <div style={{ fontSize: '36px', fontWeight: '900', color: '#00ff66' }}>+${wealthGain.toFixed(1)}B</div>
-                </div>
-                <div style={{ fontSize: '24px', color: '#444' }}>vs</div>
-                <div>
-                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>ADDED TO YOUR DEBT</div>
-                  <div style={{ fontSize: '36px', fontWeight: '900', color: '#ff3333', fontVariantNumeric: 'tabular-nums' }}>+{fmt(debtSinceInauguration)}</div>
-                </div>
-              </div>
-              <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(255,50,50,0.1)', borderRadius: '8px', border: '1px solid rgba(255,50,50,0.2)' }}>
-                <div style={{ fontSize: '14px', color: '#ccc' }}>
-                  For every <span style={{ color: '#00ff66', fontWeight: 'bold' }}>$1</span> Trump gained personally,
-                  the national debt increased by{' '}
-                  <span style={{ color: '#ff3333', fontWeight: 'bold', fontSize: '18px' }}>
-                    ${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}
-                  </span>
-                </div>
-              </div>
+          {/* Contrast */}
+          <Card style={{ marginBottom: '32px', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '12px', letterSpacing: '2px', color: '#6b6b7b', margin: '0 0 24px 0' }}>THE CONTRAST</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '32px' }}>
+              <div><div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '8px' }}>Trump's Gain</div><div style={{ fontSize: '36px', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div></div>
+              <div style={{ fontSize: '24px', color: '#3a3a4a' }}>vs</div>
+              <div><div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '8px' }}>Added to Your Debt</div><div style={{ fontSize: '36px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div></div>
             </div>
+            <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(239,68,68,0.08)', borderRadius: '8px' }}>
+              For every <span style={{ color: '#22c55e', fontWeight: '600' }}>$1</span> Trump gained, debt increased by <span style={{ color: '#ef4444', fontWeight: '700', fontSize: '18px' }}>${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}</span>
+            </div>
+          </Card>
 
-            {/* US CITIZENS KILLED */}
-            <div style={{
-              ...styles.cardStrong('#aa0000'),
-              borderColor: '#880000',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff0000', boxShadow: '0 0 10px #ff0000', animation: 'pulse 2s infinite' }} />
-                <h3 style={{ fontSize: '14px', letterSpacing: '2px', color: '#ff4444', margin: 0 }}>
-                  U.S. CITIZENS KILLED BY FEDERAL IMMIGRATION AGENTS
-                </h3>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                {iceVictims.map(v => (
-                  <div key={v.id} style={{
-                    background: 'rgba(255,0,0,0.1)',
-                    border: '1px solid rgba(255,0,0,0.3)',
-                    borderRadius: '8px',
-                    padding: '16px',
-                  }}>
-                    <div style={{ fontSize: '20px', fontWeight: '900', color: '#fff' }}>{v.name}</div>
-                    <div style={{ fontSize: '11px', color: '#ff6666', margin: '4px 0' }}>
-                      Age {v.age} • {v.citizenship} • {v.agency}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#888' }}>{v.date} • {v.location}</div>
-                    <div style={{ fontSize: '11px', color: '#aaa', marginTop: '12px', lineHeight: 1.5 }}>{v.details}</div>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => setActiveTab('ice')}
-                style={{
-                  marginTop: '16px',
-                  padding: '8px 16px',
-                  background: 'rgba(255,0,0,0.2)',
-                  border: '1px solid #aa0000',
-                  borderRadius: '4px',
-                  color: '#ff6666',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                Full Details & Statistics →
-              </button>
+          {/* ICE */}
+          <Card style={{ marginBottom: '32px', borderColor: '#dc2626' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#dc2626', boxShadow: '0 0 12px rgba(220,38,38,0.5)' }} />
+              <h2 style={{ fontSize: '14px', color: '#fca5a5', margin: 0 }}>U.S. Citizens Killed by Federal Immigration Agents</h2>
             </div>
-
-            {/* GOLF / SELF-DEALING PREVIEW */}
-            <div style={styles.card('#ffc800')}>
-              <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#ffc800', marginBottom: '8px' }}>TAXPAYER-FUNDED GOLF (2025)</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '16px' }}>
-                <div style={{ fontSize: '36px', fontWeight: '900', color: '#ffc800' }}>${totalGolfCost.toFixed(1)}M</div>
-                <div style={{ fontSize: '12px', color: '#888' }}>{totalTrips} trips • {golf.propertyVisits2025 || 0} total property visits</div>
-              </div>
-              <div style={{
-                marginTop: '16px',
-                padding: '12px',
-                background: 'rgba(255,200,0,0.1)',
-                borderRadius: '6px',
-                border: '1px solid rgba(255,200,0,0.2)',
-              }}>
-                <div style={{ fontSize: '12px', color: '#ccc' }}>
-                  <strong style={{ color: '#ffc800' }}>Key insight:</strong> When Trump golfs at his resorts, 
-                  taxpayers pay for security and lodging <em>at properties he profits from</em>. 
-                  Est. ~{fmt(selfDealingFromGolf)} went directly to his businesses in 2025.
-                </div>
-              </div>
-              <button
-                onClick={() => setActiveTab('self-dealing')}
-                style={{
-                  marginTop: '12px',
-                  padding: '8px 16px',
-                  background: 'rgba(255,200,0,0.2)',
-                  border: '1px solid #ffc800',
-                  borderRadius: '4px',
-                  color: '#ffc800',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                Full Self-Dealing Breakdown →
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* ============ BROKEN PROMISES TAB ============ */}
-        {activeTab === 'promises' && (
-          <>
-            <h2 style={{ fontSize: '18px', color: '#ff6600', marginBottom: '8px', letterSpacing: '1px' }}>
-              CAMPAIGN PROMISES vs REALITY
-            </h2>
-            <p style={{ fontSize: '12px', color: '#888', marginBottom: '24px', lineHeight: 1.6 }}>
-              Every promise below includes exact quotes, dates, and verifiable outcomes.
-            </p>
-            
-            {brokenPromises.map(p => (
-              <div key={p.id} style={{
-                ...styles.card(p.statusColor || '#ff3333'),
-                marginBottom: '16px',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>{(p.category || '').toUpperCase()}</div>
-                    <div style={{ fontSize: '16px', fontWeight: '900', color: '#fff' }}>{p.promise}</div>
-                    <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
-                      {p.datePromised} {p.location && `• ${p.location}`}
-                    </div>
-                  </div>
-                  <div style={{
-                    padding: '6px 14px',
-                    background: (p.statusColor || '#ff3333') + '25',
-                    border: `1px solid ${p.statusColor || '#ff3333'}`,
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    color: p.statusColor || '#ff3333',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {p.status}
-                  </div>
-                </div>
-                
-                {/* Quote */}
-                <div style={{
-                  padding: '12px 16px',
-                  background: 'rgba(0,0,0,0.3)',
-                  borderRadius: '6px',
-                  borderLeft: `3px solid ${p.statusColor || '#ff3333'}`,
-                  marginBottom: '16px',
-                }}>
-                  <div style={{ fontSize: '12px', color: '#aaa', fontStyle: 'italic', lineHeight: 1.5 }}>
-                    {p.quote}
-                  </div>
-                </div>
-                
-                {p.deadline && (
-                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '12px' }}>
-                    <strong>Deadline:</strong> {p.deadline}
-                  </div>
-                )}
-                
-                {/* Reality */}
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '8px', letterSpacing: '1px' }}>REALITY:</div>
-                  {(p.reality || []).map((fact, i) => (
-                    <div key={i} style={{
-                      fontSize: '12px',
-                      color: '#ccc',
-                      padding: '6px 0 6px 14px',
-                      borderLeft: '2px solid #333',
-                      marginBottom: '4px',
-                      lineHeight: 1.4,
-                    }}>
-                      {fact}
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Progress bar */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#666', marginBottom: '4px' }}>
-                    <span>Promise fulfilled</span>
-                    <span>{p.progress || 0}%</span>
-                  </div>
-                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%',
-                      width: `${p.progress || 0}%`,
-                      background: p.statusColor || '#ff3333',
-                      borderRadius: '3px',
-                    }} />
-                  </div>
-                </div>
-                
-                {/* Sources */}
-                <div style={{ marginTop: '12px', fontSize: '10px', color: '#666' }}>
-                  Sources: {(p.sources || []).join(' • ')}
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* ============ SELF-DEALING TAB ============ */}
-        {activeTab === 'self-dealing' && (
-          <>
-            <h2 style={{ fontSize: '18px', color: '#ffc800', marginBottom: '8px', letterSpacing: '1px' }}>
-              THE SELF-DEALING PROBLEM
-            </h2>
-            <p style={{ fontSize: '12px', color: '#888', marginBottom: '24px', lineHeight: 1.6 }}>
-              When the President spends taxpayer money at his own businesses, he profits personally.
-            </p>
-            
-            {/* Key insight */}
-            <div style={{
-              ...styles.card('#ffc800'),
-              borderWidth: '2px',
-              marginBottom: '24px',
-            }}>
-              <h3 style={{ fontSize: '14px', color: '#ffc800', marginBottom: '12px' }}>
-                🔑 THE KEY INSIGHT MOST PEOPLE MISS:
-              </h3>
-              <div style={{ fontSize: '14px', color: '#fff', lineHeight: 1.7, marginBottom: '12px' }}>
-                When Trump golfs at Mar-a-Lago, taxpayers pay for Secret Service rooms, meals, and 
-                facilities <strong style={{ color: '#ffc800' }}>at a resort Trump owns</strong>.
-                <br /><br />
-                This money goes <strong style={{ color: '#ffc800' }}>directly into his bank account</strong>.
-              </div>
-            </div>
-            
-            {/* Stats grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-              <div style={styles.card('#ff6666')}>
-                <div style={{ fontSize: '10px', letterSpacing: '1px', color: '#ff6666', marginBottom: '8px' }}>SECRET SERVICE @ TRUMP PROPERTIES</div>
-                <div style={{ fontSize: '28px', fontWeight: '900', color: '#ff6666' }}>~$2M</div>
-                <div style={{ fontSize: '11px', color: '#888' }}>First term alone</div>
-              </div>
-              <div style={styles.card('#ff9900')}>
-                <div style={{ fontSize: '10px', letterSpacing: '1px', color: '#ff9900', marginBottom: '8px' }}>FOREIGN GOVERNMENTS (FIRST TERM)</div>
-                <div style={{ fontSize: '28px', fontWeight: '900', color: '#ff9900' }}>{fmt(selfDealing.foreignGovFirstTerm || 7800000)}</div>
-                <div style={{ fontSize: '11px', color: '#888' }}>{selfDealing.foreignCountries || 20} countries</div>
-              </div>
-              <div style={styles.card('#ffcc00')}>
-                <div style={{ fontSize: '10px', letterSpacing: '1px', color: '#ffcc00', marginBottom: '8px' }}>SECRET SERVICE OVERCHARGE</div>
-                <div style={{ fontSize: '28px', fontWeight: '900', color: '#ffcc00' }}>{selfDealing.overchargeRate || '300%'}</div>
-                <div style={{ fontSize: '11px', color: '#888' }}>Above government rates</div>
-              </div>
-              <div style={styles.card('#88ff88')}>
-                <div style={{ fontSize: '10px', letterSpacing: '1px', color: '#88ff88', marginBottom: '8px' }}>CRYPTO TRADING FEES</div>
-                <div style={{ fontSize: '28px', fontWeight: '900', color: '#88ff88' }}>{fmt(selfDealing.cryptoFees || 427000000)}</div>
-                <div style={{ fontSize: '11px', color: '#888' }}>$TRUMP coin + World Liberty Financial</div>
-              </div>
-            </div>
-            
-            {/* Golf breakdown */}
-            <div style={styles.card('#ffc800')}>
-              <h3 style={{ fontSize: '14px', color: '#ffc800', marginBottom: '16px' }}>GOLF TRIP SELF-DEALING MATH</h3>
-              <div style={{ display: 'grid', gap: '8px' }}>
-                {[
-                  { label: 'Golf trips in 2025', value: totalTrips },
-                  { label: 'Total property visits (CREW count)', value: golf.propertyVisits2025 || 129 },
-                  { label: 'Est. Trump revenue per trip (GAO basis)', value: fmt(selfDealing.revenuePerTrip || 60000) },
-                ].map((row, i) => (
-                  <div key={i} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '10px 12px',
-                    background: 'rgba(0,0,0,0.3)',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                  }}>
-                    <span style={{ color: '#888' }}>{row.label}</span>
-                    <span style={{ color: '#ffc800', fontWeight: 'bold' }}>{row.value}</span>
-                  </div>
-                ))}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '14px 12px',
-                  background: 'rgba(255,200,0,0.15)',
-                  borderRadius: '4px',
-                  border: '1px solid rgba(255,200,0,0.3)',
-                  fontSize: '14px',
-                  marginTop: '8px',
-                }}>
-                  <span style={{ color: '#fff', fontWeight: 'bold' }}>Est. total to Trump's pocket (2025 golf)</span>
-                  <span style={{ color: '#ffc800', fontWeight: 'bold', fontSize: '18px' }}>{fmt(selfDealingFromGolf)}</span>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ============ ICE TAB ============ */}
-        {activeTab === 'ice' && (
-          <>
-            <h2 style={{ fontSize: '18px', color: '#ff4444', marginBottom: '8px', letterSpacing: '1px' }}>
-              U.S. CITIZENS KILLED BY FEDERAL IMMIGRATION AGENTS
-            </h2>
-            
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-              {[
-                { value: iceVictims.filter(v => v.citizenship === 'US Citizen').length, label: 'US CITIZENS\nKILLED', color: '#ff0000' },
-                { value: `${iceStats.totalShootings || 27}+`, label: 'TOTAL\nSHOOTINGS', color: '#ff4444' },
-                { value: iceStats.shootingDeaths || 8, label: 'SHOOTING\nDEATHS', color: '#ff6666' },
-                { value: iceStats.detentionDeaths2025 || 32, label: '2025 DETENTION\nDEATHS', color: '#ff8888' },
-                { value: `${iceStats.detentionDeaths2026 || 6}+`, label: '2026 DETENTION\nDEATHS', color: '#ffaaaa' },
-              ].map((s, i) => (
-                <div key={i} style={{
-                  textAlign: 'center',
-                  padding: '16px 8px',
-                  background: 'rgba(255,0,0,0.08)',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255,0,0,0.2)',
-                }}>
-                  <div style={{ fontSize: '28px', fontWeight: '900', color: s.color }}>{s.value}</div>
-                  <div style={{ fontSize: '9px', color: '#888', whiteSpace: 'pre-line', marginTop: '4px' }}>{s.label}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+              {iceVictims.map(v => (
+                <div key={v.id} style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: '8px', padding: '16px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#fff' }}>{v.name}</div>
+                  <div style={{ fontSize: '12px', color: '#fca5a5', marginTop: '4px' }}>Age {v.age} • {v.citizenship} • {v.agency}</div>
+                  <div style={{ fontSize: '12px', color: '#6b6b7b' }}>{v.date} • {v.location}</div>
                 </div>
               ))}
             </div>
-            
-            {/* Victim details */}
-            {iceVictims.map(v => (
-              <div key={v.id} style={{
-                ...styles.cardStrong('#880000'),
-                marginBottom: '20px',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                  <div>
-                    <div style={{ fontSize: '24px', fontWeight: '900', color: '#fff' }}>{v.name}</div>
-                    <div style={{ fontSize: '12px', color: '#ff6666', marginTop: '4px' }}>
-                      Age {v.age} • {v.citizenship} • Killed by {v.agency}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
-                      {v.date} • {v.location}
-                    </div>
-                  </div>
-                </div>
-                
-                <div style={{
-                  marginTop: '16px',
-                  padding: '14px',
-                  background: 'rgba(0,0,0,0.3)',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  color: '#ccc',
-                  lineHeight: 1.6,
-                }}>
-                  {v.details}
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
-                  <div style={{ padding: '12px', background: 'rgba(255,100,100,0.1)', borderRadius: '6px' }}>
-                    <div style={{ fontSize: '10px', color: '#ff8888', marginBottom: '4px' }}>OFFICIAL ACCOUNT</div>
-                    <div style={{ fontSize: '11px', color: '#aaa' }}>{v.officialResponse}</div>
-                  </div>
-                  <div style={{ padding: '12px', background: 'rgba(100,255,100,0.1)', borderRadius: '6px' }}>
-                    <div style={{ fontSize: '10px', color: '#88ff88', marginBottom: '4px' }}>WITNESS ACCOUNT</div>
-                    <div style={{ fontSize: '11px', color: '#aaa' }}>{v.witnessAccount}</div>
-                  </div>
-                </div>
-                
-                <div style={{ marginTop: '12px', fontSize: '10px', color: '#666' }}>
-                  Sources: {(v.sources || []).join(' • ')}
-                </div>
-              </div>
-            ))}
-          </>
-        )}
+            <button onClick={() => setActiveTab('ice')} style={{ marginTop: '16px', padding: '10px 16px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '6px', color: '#fca5a5', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>Full Details →</button>
+          </Card>
 
-        {/* ============ SOURCES TAB ============ */}
-        {activeTab === 'sources' && (
-          <>
-            <h2 style={{ fontSize: '18px', color: '#888', marginBottom: '24px' }}>
-              DATA SOURCES & METHODOLOGY
-            </h2>
-            
-            {[
-              { category: 'National Debt', sources: ['U.S. Treasury Department', 'Joint Economic Committee', 'CBO'] },
-              { category: 'Personal Wealth', sources: ['Forbes', 'Bloomberg', 'New York Times'] },
-              { category: 'Golf & Travel', sources: ['GAO', 'HuffPost', 'CREW'] },
-              { category: 'Self-Dealing', sources: ['CREW', 'American Oversight', 'House Oversight Committee'] },
-              { category: 'Broken Promises', sources: ['PolitiFact', 'CNN', 'NPR', 'BLS', 'EIA'] },
-              { category: 'ICE Deaths', sources: ['Wikipedia', 'NPR', 'AP', 'ACLU', 'Vera Institute'] },
-            ].map((section, i) => (
-              <div key={i} style={{ marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '12px', color: '#aaa', marginBottom: '8px' }}>{section.category}</h3>
-                <div style={{ fontSize: '11px', color: '#666' }}>{section.sources.join(' • ')}</div>
-              </div>
-            ))}
-          </>
-        )}
+          {/* Golf */}
+          <Card>
+            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Taxpayer-Funded Golf (Term to Date)</div>
+            <div style={{ fontSize: '32px', fontWeight: '700', color: '#eab308' }}>${totalGolfCost.toFixed(1)}M</div>
+            <div style={{ fontSize: '13px', color: '#6b6b7b', marginTop: '8px' }}>{totalTrips} trips • {golf.propertyVisits2025 || 0} property visits</div>
+            <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(234,179,8,0.08)', borderRadius: '8px', fontSize: '13px', color: '#a8a8b8', lineHeight: 1.6 }}>
+              <strong style={{ color: '#eab308' }}>Why it matters:</strong> Taxpayers pay for Secret Service at resorts Trump profits from. Est. <strong style={{ color: '#eab308' }}>{fmt(selfDealingFromGolf)}</strong> to his pocket.
+            </div>
+            <button onClick={() => setActiveTab('money')} style={{ marginTop: '16px', padding: '10px 16px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '6px', color: '#eab308', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>Full Breakdown →</button>
+          </Card>
+        </>}
 
-        {/* ---- FOOTER ---- */}
-        <footer style={{
-          textAlign: 'center',
-          padding: '40px 20px',
-          borderTop: '1px solid rgba(255,255,255,0.1)',
-          marginTop: '40px',
-        }}>
-          <div style={{ fontSize: '11px', color: '#666' }}>
-            Built for transparency and accountability • Data auto-updates via AI monitoring
+        {/* PROMISES */}
+        {activeTab === 'promises' && <>
+          <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#fff', margin: '0 0 8px 0' }}>Campaign Promises vs Reality</h2>
+          <p style={{ fontSize: '14px', color: '#6b6b7b', margin: '0 0 24px 0' }}>Exact quotes. Verifiable outcomes.</p>
+          {brokenPromises.map(p => (
+            <Card key={p.id} style={{ marginBottom: '16px', borderLeft: `3px solid ${p.statusColor || '#ef4444'}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+                <div><div style={{ fontSize: '11px', color: '#6b6b7b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>{p.category}</div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#fff', margin: 0 }}>{p.promise}</h3>
+                  <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '4px' }}>{p.datePromised}</div></div>
+                <div style={{ padding: '6px 12px', background: `${p.statusColor || '#ef4444'}20`, borderRadius: '4px', fontSize: '11px', fontWeight: '600', color: p.statusColor || '#ef4444', height: 'fit-content' }}>{p.status}</div>
+              </div>
+              <div style={{ padding: '16px', background: '#0f0f14', borderRadius: '8px', borderLeft: `2px solid ${p.statusColor || '#ef4444'}`, marginBottom: '16px' }}>
+                <div style={{ fontSize: '14px', color: '#a8a8b8', fontStyle: 'italic' }}>"{p.quote}"</div>
+              </div>
+              {p.deadline && <div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '12px' }}><strong>Deadline:</strong> {p.deadline}</div>}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Reality</div>
+                {(p.reality || []).map((f, i) => <div key={i} style={{ fontSize: '13px', color: '#d4d4dc', padding: '8px 0 8px 16px', borderLeft: '2px solid #3a3a4a', marginBottom: '4px' }}>{f}</div>)}
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#6b6b7b', marginBottom: '6px' }}><span>Fulfilled</span><span>{p.progress || 0}%</span></div>
+                <div style={{ height: '4px', background: '#252530', borderRadius: '2px' }}><div style={{ height: '100%', width: `${p.progress || 0}%`, background: p.statusColor || '#ef4444', borderRadius: '2px' }} /></div>
+              </div>
+              <div style={{ fontSize: '11px', color: '#4a4a5a' }}>Sources: {(p.sources || []).join(' • ')}</div>
+            </Card>
+          ))}
+        </>}
+
+        {/* MONEY */}
+        {activeTab === 'money' && <>
+          <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#fff', margin: '0 0 8px 0' }}>Follow the Money</h2>
+          <p style={{ fontSize: '14px', color: '#6b6b7b', margin: '0 0 24px 0' }}>Self-dealing, conflicts of interest, taxpayer money to Trump businesses.</p>
+          <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, rgba(234,179,8,0.1) 0%, #16161e 100%)', borderColor: 'rgba(234,179,8,0.3)' }}>
+            <h3 style={{ fontSize: '14px', color: '#eab308', margin: '0 0 12px 0' }}>The Key Insight Most People Miss</h3>
+            <p style={{ fontSize: '15px', color: '#e8e8ed', lineHeight: 1.7, margin: 0 }}>
+              When Trump golfs at Mar-a-Lago, taxpayers pay for Secret Service rooms <strong style={{ color: '#eab308' }}>at a resort he owns</strong>. This money goes <strong style={{ color: '#eab308' }}>directly into his bank account</strong>.
+            </p>
+          </Card>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            {[{ label: 'Secret Service @ Properties', value: '~$2M', sub: 'First term', color: '#ef4444' },
+              { label: 'Foreign Governments', value: fmt(selfDealing.foreignGovFirstTerm || 7800000), sub: `${selfDealing.foreignCountries || 20} countries`, color: '#f97316' },
+              { label: 'Overcharge Rate', value: selfDealing.overchargeRate || '300%', sub: 'Above govt rates', color: '#eab308' },
+              { label: 'Crypto Fees', value: fmt(selfDealing.cryptoFees || 427000000), sub: '$TRUMP + WLF', color: '#22c55e' }
+            ].map((s, i) => <Card key={i} style={{ padding: '16px' }}><div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>{s.label}</div><div style={{ fontSize: '24px', fontWeight: '700', color: s.color }}>{s.value}</div><div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '4px' }}>{s.sub}</div></Card>)}
           </div>
-        </footer>
-      </div>
+          <Card style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '14px', color: '#eab308', margin: '0 0 16px 0' }}>Golf Trip Self-Dealing</h3>
+            {[{ l: 'Golf trips', v: totalTrips }, { l: 'Property visits (CREW)', v: golf.propertyVisits2025 || 129 }, { l: 'Revenue per trip (GAO)', v: fmt(selfDealing.revenuePerTrip || 60000) }].map((r, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#0f0f14', borderRadius: '6px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#6b6b7b' }}>{r.l}</span><span style={{ fontSize: '13px', color: '#eab308', fontWeight: '600' }}>{r.v}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px', background: 'rgba(234,179,8,0.1)', borderRadius: '6px', marginTop: '8px' }}>
+              <span style={{ fontWeight: '600', color: '#fff' }}>Est. to Trump's pocket</span><span style={{ fontSize: '18px', fontWeight: '700', color: '#eab308' }}>{fmt(selfDealingFromGolf)}</span>
+            </div>
+          </Card>
+          <Card>
+            <h3 style={{ fontSize: '14px', color: '#6b6b7b', margin: '0 0 16px 0' }}>"America First" vs Israel Military Aid</h3>
+            <div style={{ fontSize: '32px', fontWeight: '700', color: '#60a5fa', marginBottom: '8px' }}>$21.7B+</div>
+            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>U.S. military aid to Israel since Oct 2023</div>
+            {[{ l: 'Arms sales since Jan 2025', v: '$10.1B+' }, { l: 'Emergency transfer (Mar 2025)', v: '$4B' }, { l: 'Bypassed Congress', v: '2 times' }].map((r, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#0f0f14', borderRadius: '6px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#6b6b7b' }}>{r.l}</span><span style={{ fontSize: '13px', color: '#60a5fa', fontWeight: '600' }}>{r.v}</span>
+              </div>
+            ))}
+            <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Brown/Costs of War • State Dept • Quincy Institute</div>
+          </Card>
+        </>}
 
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.9); }
-        }
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-        * { box-sizing: border-box; }
-      `}</style>
+        {/* ICE */}
+        {activeTab === 'ice' && <>
+          <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#fff', margin: '0 0 8px 0' }}>U.S. Citizens Killed by Federal Immigration Agents</h2>
+          <p style={{ fontSize: '14px', color: '#6b6b7b', margin: '0 0 24px 0' }}>Documented incidents with official and witness accounts.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            {[{ v: iceVictims.filter(x => x.citizenship === 'US Citizen').length, l: 'US Citizens Killed', c: '#dc2626' },
+              { v: `${iceStats.totalShootings || 27}+`, l: 'Total Shootings', c: '#ef4444' },
+              { v: iceStats.shootingDeaths || 8, l: 'Shooting Deaths', c: '#f87171' },
+              { v: iceStats.detentionDeaths2025 || 32, l: '2025 Detention Deaths', c: '#fca5a5' }
+            ].map((s, i) => <div key={i} style={{ textAlign: 'center', padding: '16px', background: 'rgba(220,38,38,0.08)', borderRadius: '8px', border: '1px solid rgba(220,38,38,0.2)' }}><div style={{ fontSize: '28px', fontWeight: '700', color: s.c }}>{s.v}</div><div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>{s.l}</div></div>)}
+          </div>
+          <div style={{ padding: '16px', background: 'rgba(220,38,38,0.08)', borderRadius: '8px', marginBottom: '24px', fontSize: '13px', color: '#fca5a5' }}>
+            <strong>Context:</strong> 2025 had highest ICE detention deaths since 2004. December 2025 was deadliest month on record.
+          </div>
+          {iceVictims.map(v => (
+            <Card key={v.id} style={{ marginBottom: '16px', borderColor: '#dc2626' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#fff', margin: '0 0 4px 0' }}>{v.name}</h3>
+              <div style={{ fontSize: '13px', color: '#fca5a5' }}>Age {v.age} • {v.citizenship} • {v.agency}</div>
+              <div style={{ fontSize: '12px', color: '#6b6b7b' }}>{v.date} • {v.location}</div>
+              <div style={{ padding: '16px', background: '#0f0f14', borderRadius: '8px', margin: '16px 0', fontSize: '14px', color: '#d4d4dc', lineHeight: 1.6 }}>{v.details}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ padding: '12px', background: 'rgba(220,38,38,0.08)', borderRadius: '6px' }}><div style={{ fontSize: '10px', color: '#fca5a5', marginBottom: '6px', fontWeight: '600' }}>OFFICIAL</div><div style={{ fontSize: '12px', color: '#a8a8b8' }}>{v.officialResponse}</div></div>
+                <div style={{ padding: '12px', background: 'rgba(34,197,94,0.08)', borderRadius: '6px' }}><div style={{ fontSize: '10px', color: '#86efac', marginBottom: '6px', fontWeight: '600' }}>WITNESS</div><div style={{ fontSize: '12px', color: '#a8a8b8' }}>{v.witnessAccount}</div></div>
+              </div>
+              <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {(v.sources || []).join(' • ')}</div>
+            </Card>
+          ))}
+        </>}
+
+        {/* SOURCES */}
+        {activeTab === 'sources' && <>
+          <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#fff', margin: '0 0 24px 0' }}>Data Sources & Methodology</h2>
+          {[{ c: 'National Debt', s: 'Treasury Debt to the Penny • JEC • CBO' },
+            { c: 'Wealth', s: 'Forbes • Bloomberg • NYT' },
+            { c: 'Golf/Travel', s: 'GAO 2019 Report • CREW • HuffPost' },
+            { c: 'Self-Dealing', s: 'CREW • American Oversight • House Oversight • FT' },
+            { c: 'Promises', s: 'PolitiFact • CNN Fact Check • NPR • BLS • EIA' },
+            { c: 'ICE/CBP', s: 'Wikipedia • NPR • AP • ACLU • Vera Institute' },
+            { c: 'Israel Aid', s: 'Brown Costs of War • State Dept • Quincy • CFR' }
+          ].map((x, i) => <Card key={i} style={{ marginBottom: '12px', padding: '16px' }}><h3 style={{ fontSize: '13px', color: '#fff', margin: '0 0 8px 0' }}>{x.c}</h3><div style={{ fontSize: '12px', color: '#6b6b7b' }}>{x.s}</div></Card>)}
+          <Card style={{ marginTop: '24px' }}>
+            <h3 style={{ fontSize: '13px', color: '#fff', margin: '0 0 12px 0' }}>Methodology</h3>
+            <p style={{ fontSize: '13px', color: '#6b6b7b', margin: 0, lineHeight: 1.7 }}>
+              Objective, verifiable facts. All claims require mainstream sources. ICE incidents require multiple sources. Auto-updates via AI monitoring.<br/><br/>
+              <strong style={{ color: '#a8a8b8' }}>Found an error?</strong> Open to corrections with sources.
+            </p>
+          </Card>
+        </>}
+      </main>
+
+      <footer style={{ borderTop: '1px solid #1e1e28', padding: '32px 20px', textAlign: 'center' }}>
+        <div style={{ fontSize: '12px', color: '#4a4a5a' }}>Built for transparency • Auto-updates via AI</div>
+      </footer>
+
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}*{box-sizing:border-box}::selection{background:rgba(239,68,68,.3)}@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');`}</style>
     </div>
   );
 }
