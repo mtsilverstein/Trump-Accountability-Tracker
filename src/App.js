@@ -109,22 +109,49 @@ function App() {
     </div>
   );
 
+  // Simple button that works on mobile
+  const NavButton = ({ active, onClick, icon, label }) => (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => e.key === 'Enter' && onClick()}
+      style={{
+        flex: '1',
+        minWidth: '60px',
+        padding: '12px 8px',
+        background: 'transparent',
+        borderBottom: active ? '2px solid #ef4444' : '2px solid transparent',
+        color: active ? '#fff' : '#6b6b7b',
+        cursor: 'pointer',
+        fontSize: '10px',
+        fontWeight: '600',
+        textAlign: 'center',
+        transition: 'color 0.2s, border-color 0.2s',
+        userSelect: 'none',
+      }}
+    >
+      <div style={{ fontSize: '18px', marginBottom: '4px' }}>{icon}</div>
+      {label}
+    </div>
+  );
+
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', fontFamily: 'Inter, -apple-system, sans-serif', color: '#e8e8ed', lineHeight: 1.6 }}>
       
       {/* Header */}
       <header style={{ background: 'linear-gradient(180deg, #0f0f14 0%, #0a0a0f 100%)', padding: '32px 20px', textAlign: 'center' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '16px', background: 'rgba(239,68,68,0.1)', padding: '6px 14px', borderRadius: '20px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite' }} />
             <span style={{ fontSize: '10px', letterSpacing: '1.5px', color: '#ef4444', fontWeight: '600' }}>LIVE TRACKER</span>
           </div>
-          <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#fff', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>Trump Accountability</h1>
+          <h1 style={{ fontSize: 'clamp(28px, 5vw, 42px)', fontWeight: '800', color: '#fff', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>Trump Accountability</h1>
           <p style={{ fontSize: '14px', color: '#6b6b7b', margin: '0 0 24px 0' }}>Facts with sources. Updated automatically.</p>
           
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '14px 24px', background: '#13131a', borderRadius: '12px', border: '1px solid #1e1e28', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
             <span style={{ fontSize: '11px', color: '#6b6b7b', fontWeight: '500' }}>TERM TO DATE</span>
-            <span style={{ fontSize: '20px', fontWeight: '700', fontFamily: 'JetBrains Mono, monospace', color: '#fff' }}>
+            <span style={{ fontSize: 'clamp(16px, 4vw, 22px)', fontWeight: '700', fontFamily: 'JetBrains Mono, monospace', color: '#fff' }}>
               {timeSinceInauguration.days}<span style={{ color: '#4a4a5a' }}>d</span> {pad(timeSinceInauguration.hours)}<span style={{ color: '#4a4a5a' }}>h</span> {pad(timeSinceInauguration.minutes)}<span style={{ color: '#4a4a5a' }}>m</span> {pad(timeSinceInauguration.seconds)}<span style={{ color: '#4a4a5a' }}>s</span>
             </span>
           </div>
@@ -133,67 +160,21 @@ function App() {
         </div>
       </header>
 
-      {/* Nav */}
+      {/* Nav - using divs instead of buttons for better mobile compat */}
       <nav style={{ background: '#0a0a0f', position: 'sticky', top: 0, zIndex: 1000, borderBottom: '1px solid #1a1a22' }}>
-        <div 
-          style={{ 
-            maxWidth: '600px', 
-            margin: '0 auto', 
-            display: 'flex', 
-            padding: '0 16px',
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
-          onTouchStart={(e) => {
-            touchStartX.current = e.touches[0].clientX;
-            isDragging.current = false;
-          }}
-          onTouchMove={(e) => {
-            const diff = Math.abs(e.touches[0].clientX - touchStartX.current);
-            if (diff > 10) isDragging.current = true;
-          }}
-          onTouchEnd={() => {
-            setTimeout(() => { isDragging.current = false; }, 100);
-          }}
-        >
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', padding: '0 8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {tabs.map(t => (
-            <button 
-              key={t.id}
-              onClick={() => handleTabClick(t.id)}
-              style={{
-                flex: '1',
-                minWidth: '70px',
-                padding: '16px 12px',
-                background: 'transparent',
-                border: 'none',
-                borderBottom: activeTab === t.id ? '2px solid #ef4444' : '2px solid transparent',
-                color: activeTab === t.id ? '#fff' : '#6b6b7b',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: '600',
-                fontFamily: 'inherit',
-                whiteSpace: 'nowrap',
-                transition: 'color 0.2s, border-color 0.2s',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
-              <span style={{ fontSize: '16px' }}>{t.icon}</span>
-              {t.label}
-            </button>
+            <NavButton key={t.id} active={activeTab === t.id} onClick={() => handleTabClick(t.id)} icon={t.icon} label={t.label} />
           ))}
         </div>
       </nav>
 
       {/* Main Content */}
-      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '24px 16px 48px' }}>
+      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '24px 16px 48px' }}>
         
         {/* OVERVIEW */}
         {activeTab === 'overview' && <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
             
             {/* Debt Card */}
             <Card glow="#ef4444">
@@ -201,7 +182,7 @@ function App() {
                 <span style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500' }}>U.S. National Debt</span>
                 <span style={{ fontSize: '9px', color: '#ef4444', background: 'rgba(239,68,68,0.15)', padding: '4px 10px', borderRadius: '4px', fontWeight: '600' }}>● LIVE</span>
               </div>
-              <div style={{ fontSize: '36px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-1px' }}>
+              <div style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-1px' }}>
                 ${(liveDebt / 1e12).toFixed(6)}T
               </div>
               <div style={{ fontSize: '12px', color: '#6b6b7b', margin: '8px 0 16px' }}>+{fmt(data.debt?.perSecond || 92912.33, 0)}/second</div>
@@ -214,7 +195,7 @@ function App() {
             {/* Wealth Card */}
             <Card glow="#22c55e">
               <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Trump Net Worth</div>
-              <div style={{ fontSize: '36px', fontWeight: '700', color: '#22c55e', letterSpacing: '-1px' }}>${wealth.current || 6.6}B</div>
+              <div style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: '700', color: '#22c55e', letterSpacing: '-1px' }}>${wealth.current || 6.6}B</div>
               <div style={{ fontSize: '12px', color: '#6b6b7b', margin: '8px 0 16px' }}>Forbes • Rank #{wealth.rank || 581}</div>
               <div style={{ padding: '14px 16px', background: 'rgba(34,197,94,0.08)', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.15)' }}>
                 <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Gained Since Jan 2024</div>
@@ -224,13 +205,16 @@ function App() {
 
             {/* Promises Card */}
             <Card glow="#f97316">
-              <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Campaign Promises</div>
+              <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Campaign Promises Tracked</div>
               <div style={{ fontSize: '48px', fontWeight: '700', color: '#f97316', lineHeight: 1 }}>
                 {brokenPromises.filter(p => p.status === 'BROKEN').length}<span style={{ fontSize: '24px', color: '#6b6b7b' }}>/{brokenPromises.length}</span>
               </div>
-              <div style={{ fontSize: '14px', color: '#f97316', margin: '8px 0 16px', fontWeight: '500' }}>Broken</div>
-              <button 
+              <div style={{ fontSize: '14px', color: '#f97316', margin: '8px 0 16px', fontWeight: '500' }}>Broken So Far</div>
+              <div 
+                role="button"
+                tabIndex={0}
                 onClick={() => handleTabClick('promises')}
+                onKeyDown={(e) => e.key === 'Enter' && handleTabClick('promises')}
                 style={{ 
                   width: '100%', 
                   padding: '14px', 
@@ -241,24 +225,27 @@ function App() {
                   fontSize: '13px', 
                   fontWeight: '600',
                   cursor: 'pointer',
-                  fontFamily: 'inherit'
+                  textAlign: 'center',
+                  userSelect: 'none',
                 }}
-              >View All Promises →</button>
+              >View All Promises →</div>
             </Card>
           </div>
 
-          {/* The Contrast */}
+          {/* The Contrast - with visual icons */}
           <Card style={{ marginBottom: '24px', textAlign: 'center', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
             <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '24px', fontWeight: '600' }}>THE CONTRAST</div>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
-              <div>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1', minWidth: '140px' }}>
+                <div style={{ fontSize: '40px', marginBottom: '8px' }}>📈</div>
                 <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>Trump's Gain</div>
-                <div style={{ fontSize: '32px', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
+                <div style={{ fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
               </div>
-              <div style={{ fontSize: '20px', color: '#2a2a3a' }}>vs</div>
-              <div>
+              <div style={{ fontSize: '24px', color: '#2a2a3a', padding: '0 8px' }}>vs</div>
+              <div style={{ flex: '1', minWidth: '140px' }}>
+                <div style={{ fontSize: '40px', marginBottom: '8px' }}>📉</div>
                 <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>Added to Your Debt</div>
-                <div style={{ fontSize: '32px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
+                <div style={{ fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
               </div>
             </div>
             <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', fontSize: '14px', color: '#a8a8b8' }}>
@@ -281,8 +268,11 @@ function App() {
                 </div>
               ))}
             </div>
-            <button 
+            <div 
+              role="button"
+              tabIndex={0}
               onClick={() => handleTabClick('ice')}
+              onKeyDown={(e) => e.key === 'Enter' && handleTabClick('ice')}
               style={{ 
                 width: '100%', 
                 padding: '14px', 
@@ -293,21 +283,25 @@ function App() {
                 fontSize: '13px', 
                 fontWeight: '600',
                 cursor: 'pointer',
-                fontFamily: 'inherit'
+                textAlign: 'center',
+                userSelect: 'none',
               }}
-            >Full Details →</button>
+            >Full Details →</div>
           </Card>
 
           {/* Golf Summary */}
           <Card glow="#eab308">
             <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Taxpayer-Funded Golf</div>
-            <div style={{ fontSize: '36px', fontWeight: '700', color: '#eab308', marginBottom: '8px' }}>{fmt(selfDealingFromGolf)}</div>
+            <div style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: '700', color: '#eab308', marginBottom: '8px' }}>{fmt(selfDealingFromGolf)}</div>
             <div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '16px' }}>{totalTrips} trips to Trump properties</div>
             <div style={{ padding: '14px 16px', background: 'rgba(234,179,8,0.08)', borderRadius: '10px', border: '1px solid rgba(234,179,8,0.15)', fontSize: '13px', color: '#a8a8b8', lineHeight: 1.6 }}>
               <strong style={{ color: '#eab308' }}>Why it matters:</strong> Secret Service pays Trump's resorts. Money goes directly to his pocket.
             </div>
-            <button 
+            <div 
+              role="button"
+              tabIndex={0}
               onClick={() => handleTabClick('money')}
+              onKeyDown={(e) => e.key === 'Enter' && handleTabClick('money')}
               style={{ 
                 width: '100%', 
                 padding: '14px', 
@@ -319,9 +313,10 @@ function App() {
                 fontSize: '13px', 
                 fontWeight: '600',
                 cursor: 'pointer',
-                fontFamily: 'inherit'
+                textAlign: 'center',
+                userSelect: 'none',
               }}
-            >Full Breakdown →</button>
+            >Full Breakdown →</div>
           </Card>
         </>}
 
