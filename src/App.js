@@ -109,29 +109,52 @@ function App() {
     </div>
   );
 
-  // Simple button that works on mobile
+  // Simple button component
   const NavButton = ({ active, onClick, icon, label }) => (
-    <a
-      href="#"
-      onClick={(e) => { e.preventDefault(); onClick(); }}
+    <button
+      type="button"
+      onClick={onClick}
       style={{
         flex: '1',
         minWidth: '60px',
         padding: '12px 8px',
         background: 'transparent',
+        border: 'none',
         borderBottom: active ? '2px solid #ef4444' : '2px solid transparent',
         color: active ? '#fff' : '#6b6b7b',
         cursor: 'pointer',
         fontSize: '10px',
         fontWeight: '600',
         textAlign: 'center',
-        textDecoration: 'none',
-        display: 'block',
+        fontFamily: 'inherit',
+        touchAction: 'manipulation',
       }}
     >
       <div style={{ fontSize: '18px', marginBottom: '4px' }}>{icon}</div>
       {label}
-    </a>
+    </button>
+  );
+
+  const ActionLink = ({ onClick, children, color }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{ 
+        display: 'block',
+        width: '100%', 
+        padding: '14px', 
+        background: `${color}15`, 
+        border: `1px solid ${color}40`, 
+        borderRadius: '10px', 
+        color: color, 
+        fontSize: '13px', 
+        fontWeight: '600',
+        cursor: 'pointer',
+        textAlign: 'center',
+        fontFamily: 'inherit',
+        touchAction: 'manipulation',
+      }}
+    >{children}</button>
   );
 
   return (
@@ -208,24 +231,7 @@ function App() {
                 {brokenPromises.filter(p => p.status === 'BROKEN').length}<span style={{ fontSize: '24px', color: '#6b6b7b' }}>/{brokenPromises.length}</span>
               </div>
               <div style={{ fontSize: '14px', color: '#f97316', margin: '8px 0 16px', fontWeight: '500' }}>Broken So Far</div>
-              <a 
-                href="#"
-                onClick={(e) => { e.preventDefault(); handleTabClick('promises'); }}
-                style={{ 
-                  display: 'block',
-                  width: '100%', 
-                  padding: '14px', 
-                  background: 'rgba(249,115,22,0.1)', 
-                  border: '1px solid rgba(249,115,22,0.3)', 
-                  borderRadius: '10px', 
-                  color: '#f97316', 
-                  fontSize: '13px', 
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  textDecoration: 'none',
-                }}
-              >View All Promises →</a>
+              <ActionLink onClick={() => handleTabClick('promises')} color="#f97316">View All Promises →</ActionLink>
             </Card>
           </div>
 
@@ -265,24 +271,7 @@ function App() {
                 </div>
               ))}
             </div>
-            <a 
-              href="#"
-              onClick={(e) => { e.preventDefault(); handleTabClick('ice'); }}
-              style={{ 
-                display: 'block',
-                width: '100%', 
-                padding: '14px', 
-                background: 'rgba(220,38,38,0.1)', 
-                border: '1px solid rgba(220,38,38,0.3)', 
-                borderRadius: '10px', 
-                color: '#fca5a5', 
-                fontSize: '13px', 
-                fontWeight: '600',
-                cursor: 'pointer',
-                textAlign: 'center',
-                textDecoration: 'none',
-              }}
-            >Full Details →</a>
+            <ActionLink onClick={() => handleTabClick('ice')} color="#fca5a5">Full Details →</ActionLink>
           </Card>
 
           {/* Golf Summary */}
@@ -293,25 +282,9 @@ function App() {
             <div style={{ padding: '14px 16px', background: 'rgba(234,179,8,0.08)', borderRadius: '10px', border: '1px solid rgba(234,179,8,0.15)', fontSize: '13px', color: '#a8a8b8', lineHeight: 1.6 }}>
               <strong style={{ color: '#eab308' }}>Why it matters:</strong> Secret Service pays Trump's resorts. Money goes directly to his pocket.
             </div>
-            <a 
-              href="#"
-              onClick={(e) => { e.preventDefault(); handleTabClick('money'); }}
-              style={{ 
-                display: 'block',
-                width: '100%', 
-                padding: '14px', 
-                marginTop: '16px',
-                background: 'rgba(234,179,8,0.1)', 
-                border: '1px solid rgba(234,179,8,0.3)', 
-                borderRadius: '10px', 
-                color: '#eab308', 
-                fontSize: '13px', 
-                fontWeight: '600',
-                cursor: 'pointer',
-                textAlign: 'center',
-                textDecoration: 'none',
-              }}
-            >Full Breakdown →</a>
+            <div style={{ marginTop: '16px' }}>
+              <ActionLink onClick={() => handleTabClick('money')} color="#eab308">Full Breakdown →</ActionLink>
+            </div>
           </Card>
         </>}
 
