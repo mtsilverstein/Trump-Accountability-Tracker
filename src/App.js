@@ -10,7 +10,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('overview');
   
   useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 100);
+    const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -64,12 +64,7 @@ function App() {
   const brokenPromises = data.brokenPromises || [];
   const wealth = data.wealth || {};
 
-  // Swipe detection
-  const touchStartX = useRef(0);
-  const isDragging = useRef(false);
-
   const handleTabClick = (tabId) => {
-    if (isDragging.current) return;
     setActiveTab(tabId);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
