@@ -65,6 +65,11 @@ function App() {
   const brokenPromises = data.brokenPromises || [];
   const wealth = data.wealth || {};
 
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
   if (loading) return <div style={{ minHeight: '100vh', background: '#0f0f14', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', color: '#888' }}>Loading...</div>;
 
   const tabs = [
@@ -76,6 +81,29 @@ function App() {
   ];
 
   const Card = ({ children, style }) => <div style={{ background: '#16161e', borderRadius: '12px', padding: '24px', border: '1px solid #252530', ...style }}>{children}</div>;
+  
+  const ActionButton = ({ onClick, children, color = '#f97316', style = {} }) => (
+    <button 
+      onPointerDown={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+      onPointerUp={(e) => { e.currentTarget.style.opacity = '1'; onClick(); }}
+      onPointerLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+      style={{ 
+        padding: '10px 16px', 
+        background: `${color}15`, 
+        border: `1px solid ${color}50`, 
+        borderRadius: '6px', 
+        color: color, 
+        fontSize: '12px', 
+        fontWeight: '500',
+        cursor: 'pointer', 
+        fontFamily: 'inherit',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        touchAction: 'manipulation',
+        ...style 
+      }}
+    >{children}</button>
+  );
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f14', fontFamily: 'Inter, -apple-system, sans-serif', color: '#e8e8ed', lineHeight: 1.6 }}>
@@ -100,13 +128,29 @@ function App() {
 
       {/* Nav */}
       <nav style={{ borderBottom: '1px solid #1e1e28', background: '#0f0f14', position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '4px', padding: '8px 20px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '4px', padding: '8px 20px', overflowX: 'auto' }}>
           {tabs.map(t => (
-            <button key={t.id} onClick={(e) => { e.preventDefault(); setActiveTab(t.id); window.scrollTo(0, 0); }} style={{
-              padding: '10px 16px', background: activeTab === t.id ? '#1e1e28' : 'transparent', border: 'none', borderRadius: '6px',
-              color: activeTab === t.id ? '#fff' : '#6b6b7b', cursor: 'pointer', fontSize: '13px', fontWeight: activeTab === t.id ? '600' : '400', fontFamily: 'inherit', whiteSpace: 'nowrap',
-              WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation'
-            }}><span style={{ marginRight: '6px' }}>{t.icon}</span>{t.label}</button>
+            <button 
+              key={t.id} 
+              onPointerDown={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+              onPointerUp={(e) => { e.currentTarget.style.opacity = '1'; handleTabClick(t.id); }}
+              onPointerLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+              style={{
+                padding: '10px 16px', 
+                background: activeTab === t.id ? '#1e1e28' : 'transparent', 
+                border: 'none', 
+                borderRadius: '6px',
+                color: activeTab === t.id ? '#fff' : '#6b6b7b', 
+                cursor: 'pointer', 
+                fontSize: '13px', 
+                fontWeight: activeTab === t.id ? '600' : '400', 
+                fontFamily: 'inherit', 
+                whiteSpace: 'nowrap',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                touchAction: 'manipulation'
+              }}
+            ><span style={{ marginRight: '6px' }}>{t.icon}</span>{t.label}</button>
           ))}
         </div>
       </nav>
@@ -145,7 +189,7 @@ function App() {
               <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Campaign Promises</div>
               <div style={{ fontSize: '32px', fontWeight: '700', color: '#f97316' }}>{brokenPromises.filter(p => p.status === 'BROKEN').length}/{brokenPromises.length}</div>
               <div style={{ fontSize: '14px', color: '#f97316', marginTop: '8px' }}>Broken</div>
-              <button onClick={(e) => { e.preventDefault(); setActiveTab('promises'); window.scrollTo(0, 0); }} style={{ marginTop: '16px', width: '100%', padding: '10px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '6px', color: '#f97316', fontSize: '12px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>View All →</button>
+              <ActionButton onClick={() => handleTabClick('promises')} color="#f97316" style={{ marginTop: '16px', width: '100%' }}>View All →</ActionButton>
             </Card>
           </div>
 
@@ -177,7 +221,7 @@ function App() {
                 </div>
               ))}
             </div>
-            <button onClick={(e) => { e.preventDefault(); setActiveTab('ice'); window.scrollTo(0, 0); }} style={{ marginTop: '16px', padding: '10px 16px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '6px', color: '#fca5a5', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>Full Details →</button>
+            <ActionButton onClick={() => handleTabClick('ice')} color="#fca5a5" style={{ marginTop: '16px' }}>Full Details →</ActionButton>
           </Card>
 
           {/* Golf */}
@@ -188,7 +232,7 @@ function App() {
             <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(234,179,8,0.08)', borderRadius: '8px', fontSize: '13px', color: '#a8a8b8', lineHeight: 1.6 }}>
               <strong style={{ color: '#eab308' }}>Why it matters:</strong> Taxpayers pay for Secret Service at resorts Trump profits from. Est. <strong style={{ color: '#eab308' }}>{fmt(selfDealingFromGolf)}</strong> to his pocket.
             </div>
-            <button onClick={(e) => { e.preventDefault(); setActiveTab('money'); window.scrollTo(0, 0); }} style={{ marginTop: '16px', padding: '10px 16px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '6px', color: '#eab308', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>Full Breakdown →</button>
+            <ActionButton onClick={() => handleTabClick('money')} color="#eab308" style={{ marginTop: '16px' }}>Full Breakdown →</ActionButton>
           </Card>
         </>}
 
