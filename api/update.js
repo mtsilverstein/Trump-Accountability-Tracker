@@ -221,22 +221,26 @@ Return ONLY valid JSON, no markdown.`;
       }
     }
     
-    // Golf trips
+    // Golf trips - validate it's reasonable (between current and 200)
     if (result.updates.newGolfTrips && typeof result.updates.newGolfTrips === 'number') {
       const current = (currentData.golf?.marALagoTrips || 0);
-      if (result.updates.newGolfTrips > current) {
+      const newTrips = parseInt(result.updates.newGolfTrips);
+      if (newTrips > current && newTrips <= 200) {  // Must be more than current but less than 200
         currentData.golf = currentData.golf || {};
-        currentData.golf.marALagoTrips = result.updates.newGolfTrips;
+        currentData.golf.marALagoTrips = newTrips;
         madeChanges = true;
       }
     }
     
-    // Wealth update
+    // Wealth update - validate it's a reasonable number (between 1 and 500 billion)
     if (result.updates.wealthUpdate?.amount) {
-      currentData.wealth = currentData.wealth || {};
-      currentData.wealth.current = result.updates.wealthUpdate.amount;
-      currentData.wealth.source = result.updates.wealthUpdate.source || 'Forbes';
-      madeChanges = true;
+      const amount = parseFloat(result.updates.wealthUpdate.amount);
+      if (amount >= 1 && amount <= 500) {  // Must be between $1B and $500B
+        currentData.wealth = currentData.wealth || {};
+        currentData.wealth.current = amount;
+        currentData.wealth.source = result.updates.wealthUpdate.source || 'Forbes';
+        madeChanges = true;
+      }
     }
     
     if (madeChanges) {
