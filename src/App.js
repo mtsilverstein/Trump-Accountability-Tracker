@@ -111,11 +111,9 @@ function App() {
 
   // Simple button that works on mobile
   const NavButton = ({ active, onClick, icon, label }) => (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => e.key === 'Enter' && onClick()}
+    <a
+      href="#"
+      onClick={(e) => { e.preventDefault(); onClick(); }}
       style={{
         flex: '1',
         minWidth: '60px',
@@ -127,13 +125,13 @@ function App() {
         fontSize: '10px',
         fontWeight: '600',
         textAlign: 'center',
-        transition: 'color 0.2s, border-color 0.2s',
-        userSelect: 'none',
+        textDecoration: 'none',
+        display: 'block',
       }}
     >
       <div style={{ fontSize: '18px', marginBottom: '4px' }}>{icon}</div>
       {label}
-    </div>
+    </a>
   );
 
   return (
@@ -210,12 +208,11 @@ function App() {
                 {brokenPromises.filter(p => p.status === 'BROKEN').length}<span style={{ fontSize: '24px', color: '#6b6b7b' }}>/{brokenPromises.length}</span>
               </div>
               <div style={{ fontSize: '14px', color: '#f97316', margin: '8px 0 16px', fontWeight: '500' }}>Broken So Far</div>
-              <div 
-                role="button"
-                tabIndex={0}
-                onClick={() => handleTabClick('promises')}
-                onKeyDown={(e) => e.key === 'Enter' && handleTabClick('promises')}
+              <a 
+                href="#"
+                onClick={(e) => { e.preventDefault(); handleTabClick('promises'); }}
                 style={{ 
+                  display: 'block',
                   width: '100%', 
                   padding: '14px', 
                   background: 'rgba(249,115,22,0.1)', 
@@ -226,9 +223,9 @@ function App() {
                   fontWeight: '600',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  userSelect: 'none',
+                  textDecoration: 'none',
                 }}
-              >View All Promises →</div>
+              >View All Promises →</a>
             </Card>
           </div>
 
@@ -268,12 +265,11 @@ function App() {
                 </div>
               ))}
             </div>
-            <div 
-              role="button"
-              tabIndex={0}
-              onClick={() => handleTabClick('ice')}
-              onKeyDown={(e) => e.key === 'Enter' && handleTabClick('ice')}
+            <a 
+              href="#"
+              onClick={(e) => { e.preventDefault(); handleTabClick('ice'); }}
               style={{ 
+                display: 'block',
                 width: '100%', 
                 padding: '14px', 
                 background: 'rgba(220,38,38,0.1)', 
@@ -284,9 +280,9 @@ function App() {
                 fontWeight: '600',
                 cursor: 'pointer',
                 textAlign: 'center',
-                userSelect: 'none',
+                textDecoration: 'none',
               }}
-            >Full Details →</div>
+            >Full Details →</a>
           </Card>
 
           {/* Golf Summary */}
@@ -297,12 +293,11 @@ function App() {
             <div style={{ padding: '14px 16px', background: 'rgba(234,179,8,0.08)', borderRadius: '10px', border: '1px solid rgba(234,179,8,0.15)', fontSize: '13px', color: '#a8a8b8', lineHeight: 1.6 }}>
               <strong style={{ color: '#eab308' }}>Why it matters:</strong> Secret Service pays Trump's resorts. Money goes directly to his pocket.
             </div>
-            <div 
-              role="button"
-              tabIndex={0}
-              onClick={() => handleTabClick('money')}
-              onKeyDown={(e) => e.key === 'Enter' && handleTabClick('money')}
+            <a 
+              href="#"
+              onClick={(e) => { e.preventDefault(); handleTabClick('money'); }}
               style={{ 
+                display: 'block',
                 width: '100%', 
                 padding: '14px', 
                 marginTop: '16px',
@@ -314,9 +309,9 @@ function App() {
                 fontWeight: '600',
                 cursor: 'pointer',
                 textAlign: 'center',
-                userSelect: 'none',
+                textDecoration: 'none',
               }}
-            >Full Breakdown →</div>
+            >Full Breakdown →</a>
           </Card>
         </>}
 
