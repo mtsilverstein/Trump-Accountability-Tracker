@@ -145,7 +145,7 @@ function App() {
               <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Campaign Promises</div>
               <div style={{ fontSize: '32px', fontWeight: '700', color: '#f97316' }}>{brokenPromises.filter(p => p.status === 'BROKEN').length}/{brokenPromises.length}</div>
               <div style={{ fontSize: '14px', color: '#f97316', marginTop: '8px' }}>Broken</div>
-              <button onClick={() => setActiveTab('promises')} style={{ marginTop: '16px', width: '100%', padding: '10px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '6px', color: '#f97316', fontSize: '12px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit' }}>View All →</button>
+              <button onClick={(e) => { e.preventDefault(); setActiveTab('promises'); window.scrollTo(0, 0); }} style={{ marginTop: '16px', width: '100%', padding: '10px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '6px', color: '#f97316', fontSize: '12px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>View All →</button>
             </Card>
           </div>
 
@@ -177,7 +177,7 @@ function App() {
                 </div>
               ))}
             </div>
-            <button onClick={() => setActiveTab('ice')} style={{ marginTop: '16px', padding: '10px 16px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '6px', color: '#fca5a5', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>Full Details →</button>
+            <button onClick={(e) => { e.preventDefault(); setActiveTab('ice'); window.scrollTo(0, 0); }} style={{ marginTop: '16px', padding: '10px 16px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '6px', color: '#fca5a5', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>Full Details →</button>
           </Card>
 
           {/* Golf */}
@@ -188,7 +188,7 @@ function App() {
             <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(234,179,8,0.08)', borderRadius: '8px', fontSize: '13px', color: '#a8a8b8', lineHeight: 1.6 }}>
               <strong style={{ color: '#eab308' }}>Why it matters:</strong> Taxpayers pay for Secret Service at resorts Trump profits from. Est. <strong style={{ color: '#eab308' }}>{fmt(selfDealingFromGolf)}</strong> to his pocket.
             </div>
-            <button onClick={() => setActiveTab('money')} style={{ marginTop: '16px', padding: '10px 16px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '6px', color: '#eab308', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>Full Breakdown →</button>
+            <button onClick={(e) => { e.preventDefault(); setActiveTab('money'); window.scrollTo(0, 0); }} style={{ marginTop: '16px', padding: '10px 16px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '6px', color: '#eab308', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>Full Breakdown →</button>
           </Card>
         </>}
 
@@ -231,34 +231,50 @@ function App() {
               When Trump golfs at Mar-a-Lago, taxpayers pay for Secret Service rooms <strong style={{ color: '#eab308' }}>at a resort he owns</strong>. This money goes <strong style={{ color: '#eab308' }}>directly into his bank account</strong>.
             </p>
           </Card>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-            {[{ label: 'Secret Service @ Properties', value: '~$2M', sub: 'First term', color: '#ef4444' },
-              { label: 'Foreign Governments', value: fmt(selfDealing.foreignGovFirstTerm || 7800000), sub: `${selfDealing.foreignCountries || 20} countries`, color: '#f97316' },
-              { label: 'Overcharge Rate', value: selfDealing.overchargeRate || '300%', sub: 'Above govt rates', color: '#eab308' },
-              { label: 'Crypto Fees', value: fmt(selfDealing.cryptoFees || 427000000), sub: '$TRUMP + WLF', color: '#22c55e' }
-            ].map((s, i) => <Card key={i} style={{ padding: '16px' }}><div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>{s.label}</div><div style={{ fontSize: '24px', fontWeight: '700', color: s.color }}>{s.value}</div><div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '4px' }}>{s.sub}</div></Card>)}
-          </div>
+          
+          {/* Golf Self-Dealing - Current Term */}
           <Card style={{ marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '14px', color: '#eab308', margin: '0 0 16px 0' }}>Golf Trip Self-Dealing</h3>
-            {[{ l: 'Golf trips', v: totalTrips }, { l: 'Property visits (CREW)', v: golf.propertyVisits2025 || 129 }, { l: 'Revenue per trip (GAO)', v: fmt(selfDealing.revenuePerTrip || 60000) }].map((r, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#0f0f14', borderRadius: '6px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', color: '#6b6b7b' }}>{r.l}</span><span style={{ fontSize: '13px', color: '#eab308', fontWeight: '600' }}>{r.v}</span>
+            <h3 style={{ fontSize: '14px', color: '#eab308', margin: '0 0 16px 0' }}>Golf Trip Self-Dealing (Term to Date)</h3>
+            {[
+              { l: 'Golf trips to Trump properties', v: totalTrips, source: 'CREW' },
+              { l: 'Total property visits', v: golf.propertyVisits2025 || 129, source: 'CREW' },
+              { l: 'Est. taxpayer cost per trip', v: fmt(selfDealing.revenuePerTrip || 60000), source: 'GAO 2019' },
+            ].map((r, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#0f0f14', borderRadius: '6px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#6b6b7b' }}>{r.l}</span>
+                <span style={{ fontSize: '13px' }}><span style={{ color: '#eab308', fontWeight: '600' }}>{r.v}</span> <span style={{ color: '#4a4a5a', fontSize: '10px' }}>({r.source})</span></span>
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px', background: 'rgba(234,179,8,0.1)', borderRadius: '6px', marginTop: '8px' }}>
-              <span style={{ fontWeight: '600', color: '#fff' }}>Est. to Trump's pocket</span><span style={{ fontSize: '18px', fontWeight: '700', color: '#eab308' }}>{fmt(selfDealingFromGolf)}</span>
+              <span style={{ fontWeight: '600', color: '#fff' }}>Est. to Trump's pocket (term to date)</span>
+              <span style={{ fontSize: '18px', fontWeight: '700', color: '#eab308' }}>{fmt(selfDealingFromGolf)}</span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>
+              Calculation: trips × $60K/trip (GAO methodology). Actual amounts reported via FOIA with lag.
             </div>
           </Card>
+
+          {/* Crypto */}
+          <Card style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '14px', color: '#22c55e', margin: '0 0 16px 0' }}>Crypto Ventures (Term to Date)</h3>
+            <div style={{ fontSize: '32px', fontWeight: '700', color: '#22c55e', marginBottom: '8px' }}>{fmt(selfDealing.cryptoFees || 427000000)}</div>
+            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Trading fees from $TRUMP memecoin + World Liberty Financial</div>
+            <div style={{ fontSize: '11px', color: '#4a4a5a' }}>
+              Sources: Financial Times • Bloomberg • On-chain data
+            </div>
+          </Card>
+
+          {/* Israel Aid */}
           <Card>
-            <h3 style={{ fontSize: '14px', color: '#6b6b7b', margin: '0 0 16px 0' }}>"America First" vs Israel Military Aid</h3>
+            <h3 style={{ fontSize: '14px', color: '#60a5fa', margin: '0 0 16px 0' }}>"America First" vs Military Aid to Israel</h3>
             <div style={{ fontSize: '32px', fontWeight: '700', color: '#60a5fa', marginBottom: '8px' }}>$21.7B+</div>
-            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>U.S. military aid to Israel since Oct 2023</div>
-            {[{ l: 'Arms sales since Jan 2025', v: '$10.1B+' }, { l: 'Emergency transfer (Mar 2025)', v: '$4B' }, { l: 'Bypassed Congress', v: '2 times' }].map((r, i) => (
+            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>U.S. military aid to Israel since Oct 2023 (Biden + Trump terms)</div>
+            {[{ l: 'Arms sales notified since Jan 2025', v: '$10.1B+' }, { l: 'Emergency expedited transfer (Mar 2025)', v: '$4B' }, { l: 'Bypassed Congress for approval', v: '2 times' }].map((r, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#0f0f14', borderRadius: '6px', marginBottom: '8px' }}>
                 <span style={{ fontSize: '13px', color: '#6b6b7b' }}>{r.l}</span><span style={{ fontSize: '13px', color: '#60a5fa', fontWeight: '600' }}>{r.v}</span>
               </div>
             ))}
-            <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Brown/Costs of War • State Dept • Quincy Institute</div>
+            <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Brown University Costs of War • State Dept • Quincy Institute</div>
           </Card>
         </>}
 
