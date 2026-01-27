@@ -187,16 +187,58 @@ Return ONLY valid JSON, no markdown.`;
   if (result.hasUpdates && result.updates) {
     let madeChanges = false;
     
-    // New ICE incident
+    // New ICE incident - check for duplicates by name, location, and date
     if (result.updates.newIceIncident?.name) {
       const ni = result.updates.newIceIncident;
-      const exists = currentData.iceVictims?.some(v => 
-        v.name.toLowerCase() === ni.name.toLowerCase()
-      );
+      const nameLower = ni.name.toLowerCase();
+      const locationLower = (ni.location || '').toLowerCase();
+      const incidentDate = ni.date || '';
+      
+      // Extract month and day for date comparison (handles "January 24, 2026" format)
+      const extractDateParts = (dateStr) => {
+        const months = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+        const lower = dateStr.toLowerCase();
+        const month = months.find(m => lower.includes(m));
+        const dayMatch = lower.match(/\d{1,2}/);
+        const yearMatch = lower.match(/202\d/);
+        return { month, day: dayMatch?.[0], year: yearMatch?.[0] };
+      };
+      
+      const newDate = extractDateParts(incidentDate);
+      
+      // Check if already exists
+      const exists = currentData.iceVictims?.some(v => {
+        const vNameLower = v.name.toLowerCase();
+        const vLocationLower = (v.location || '').toLowerCase();
+        const vDate = extractDateParts(v.date || '');
+        
+        // Same date AND same location = likely same incident
+        const sameDate = newDate.month && vDate.month && 
+                         newDate.month === vDate.month && 
+                         newDate.day === vDate.day &&
+                         newDate.year === vDate.year;
+        const sameLocation = locationLower && vLocationLower && 
+                             (locationLower.includes(vLocationLower.split(',')[0]) || 
+                              vLocationLower.includes(locationLower.split(',')[0]));
+        
+        // If same date and location, it's the same incident regardless of name
+        if (sameDate && sameLocation) {
+          return true;
+        }
+        
+        // Direct name match (if not unidentified)
+        if (!nameLower.includes('unidentified') && !nameLower.includes('unknown')) {
+          return vNameLower === nameLower || 
+                 vNameLower.includes(nameLower) || 
+                 nameLower.includes(vNameLower);
+        }
+        
+        return false;
+      });
       
       if (!exists) {
         currentData.iceVictims = [...(currentData.iceVictims || []), {
-          id: ni.name.toLowerCase().replace(/\s+/g, '-'),
+          id: ni.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
           name: ni.name,
           date: ni.date || 'Unknown',
           location: ni.location || 'Unknown',

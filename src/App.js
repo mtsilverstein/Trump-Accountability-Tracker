@@ -99,12 +99,13 @@ function App() {
       </header>
 
       {/* Nav */}
-      <nav style={{ borderBottom: '1px solid #1e1e28', background: '#0f0f14', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '4px', padding: '8px 20px', overflowX: 'auto' }}>
+      <nav style={{ borderBottom: '1px solid #1e1e28', background: '#0f0f14', position: 'sticky', top: 0, zIndex: 1000 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '4px', padding: '8px 20px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+            <button key={t.id} onClick={(e) => { e.preventDefault(); setActiveTab(t.id); window.scrollTo(0, 0); }} style={{
               padding: '10px 16px', background: activeTab === t.id ? '#1e1e28' : 'transparent', border: 'none', borderRadius: '6px',
-              color: activeTab === t.id ? '#fff' : '#6b6b7b', cursor: 'pointer', fontSize: '13px', fontWeight: activeTab === t.id ? '600' : '400', fontFamily: 'inherit', whiteSpace: 'nowrap'
+              color: activeTab === t.id ? '#fff' : '#6b6b7b', cursor: 'pointer', fontSize: '13px', fontWeight: activeTab === t.id ? '600' : '400', fontFamily: 'inherit', whiteSpace: 'nowrap',
+              WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation'
             }}><span style={{ marginRight: '6px' }}>{t.icon}</span>{t.label}</button>
           ))}
         </div>
