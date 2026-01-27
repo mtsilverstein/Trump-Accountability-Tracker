@@ -475,11 +475,10 @@ function App() {
       <style>{`
         @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .4 } }
         @keyframes spin { to { transform: rotate(360deg) } }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; }
         ::selection { background: rgba(239,68,68,.3) }
-        html { scroll-behavior: smooth }
         nav div::-webkit-scrollbar { display: none }
-        button:active { opacity: 0.8 }
+        a, button { touch-action: manipulation; -webkit-touch-callout: none; }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
       `}</style>
     </div>
