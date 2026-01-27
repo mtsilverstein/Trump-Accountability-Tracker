@@ -232,10 +232,10 @@ Return ONLY valid JSON, no markdown.`;
       }
     }
     
-    // Wealth update - validate it's a reasonable number (between 1 and 500 billion)
+    // Wealth update - validate it's a reasonable number (between 0.5 and 500 billion)
     if (result.updates.wealthUpdate?.amount) {
       const amount = parseFloat(result.updates.wealthUpdate.amount);
-      if (amount >= 1 && amount <= 500) {  // Must be between $1B and $500B
+      if (amount >= 0.5 && amount <= 500) {  // Must be between $500M and $500B
         currentData.wealth = currentData.wealth || {};
         currentData.wealth.current = amount;
         currentData.wealth.source = result.updates.wealthUpdate.source || 'Forbes';
