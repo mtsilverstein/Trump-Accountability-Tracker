@@ -81,6 +81,7 @@ function App() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'promises', label: 'Promises', icon: '❌' },
+    { id: 'constitution', label: 'Constitution', icon: '📜' },
     { id: 'money', label: 'Money', icon: '💰' },
     { id: 'ice', label: 'ICE', icon: '⚠️' },
     { id: 'sources', label: 'Sources', icon: '📑' },
@@ -230,24 +231,24 @@ function App() {
             </Card>
           </div>
 
-          {/* The Contrast - with visual icons */}
-          <Card style={{ marginBottom: '24px', textAlign: 'center', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
-            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '24px', fontWeight: '600' }}>THE CONTRAST</div>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1', minWidth: '140px' }}>
-                <div style={{ fontSize: '40px', marginBottom: '8px' }}>📈</div>
-                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>Trump's Gain</div>
-                <div style={{ fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
+          {/* The Contrast - clean visual design */}
+          <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '24px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '16px', alignItems: 'center' }}>
+              <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(34,197,94,0.06)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.15)' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>Trump's Gain</div>
+                <div style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
+                <div style={{ width: '60%', height: '4px', background: 'linear-gradient(90deg, #22c55e 0%, #22c55e 100%)', borderRadius: '2px', margin: '12px auto 0' }} />
               </div>
-              <div style={{ fontSize: '24px', color: '#2a2a3a', padding: '0 8px' }}>vs</div>
-              <div style={{ flex: '1', minWidth: '140px' }}>
-                <div style={{ fontSize: '40px', marginBottom: '8px' }}>📉</div>
-                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>Added to Your Debt</div>
-                <div style={{ fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
+              <div style={{ fontSize: '16px', color: '#2a2a3a', fontWeight: '600' }}>vs</div>
+              <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(239,68,68,0.06)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.15)' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>Added to Debt</div>
+                <div style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
+                <div style={{ width: '100%', height: '4px', background: 'linear-gradient(90deg, #ef4444 0%, #ef4444 100%)', borderRadius: '2px', margin: '12px auto 0' }} />
               </div>
             </div>
-            <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', fontSize: '14px', color: '#a8a8b8' }}>
-              For every <span style={{ color: '#22c55e', fontWeight: '600' }}>$1</span> Trump gained, debt increased by <span style={{ color: '#ef4444', fontWeight: '700', fontSize: '18px' }}>${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}</span>
+            <div style={{ marginTop: '20px', padding: '14px 16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', fontSize: '13px', color: '#a8a8b8', textAlign: 'center' }}>
+              For every <span style={{ color: '#22c55e', fontWeight: '600' }}>$1</span> Trump gained, debt increased by <span style={{ color: '#ef4444', fontWeight: '700' }}>${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}</span>
             </div>
           </Card>
 
@@ -304,6 +305,116 @@ function App() {
               <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {(p.sources || []).join(' • ')}</div>
             </Card>
           ))}
+        </>}
+
+        {/* CONSTITUTION */}
+        {activeTab === 'constitution' && <>
+          <PageHeader title="Constitutional Concerns" subtitle="Documented actions, rulings, and statements that challenge constitutional principles" />
+          
+          <div style={{ padding: '14px 16px', background: 'rgba(147,51,234,0.08)', borderRadius: '10px', marginBottom: '24px', fontSize: '12px', color: '#c4b5fd', border: '1px solid rgba(147,51,234,0.2)' }}>
+            <strong>Note:</strong> This section presents documented facts—direct quotes, court rulings, and official actions. Each item includes primary sources for verification.
+          </div>
+
+          {/* Defying Court Orders */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #a855f7' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '600', padding: '4px 10px', borderRadius: '4px', background: 'rgba(168,85,247,0.2)', color: '#a855f7' }}>SEPARATION OF POWERS</span>
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: '0 0 12px 0' }}>Administration Defies Federal Court Orders</h3>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>
+                Multiple federal judges have issued rulings finding the administration in contempt or violation of court orders regarding deportation flights and immigration enforcement. In January 2026, a federal judge ruled the administration violated a court order by continuing deportation flights after a temporary restraining order was issued.
+              </p>
+            </div>
+            <div style={{ padding: '12px 14px', background: 'rgba(168,85,247,0.06)', borderRadius: '8px', borderLeft: '2px solid #a855f7' }}>
+              <div style={{ fontSize: '12px', color: '#a855f7', marginBottom: '6px' }}>CONSTITUTIONAL PRINCIPLE</div>
+              <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>
+                Article III establishes the judiciary as a co-equal branch. Executive defiance of court orders undermines judicial review—a cornerstone of constitutional checks and balances since Marbury v. Madison (1803).
+              </p>
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: AP News • Reuters • Federal Court Records • ACLU</div>
+          </Card>
+
+          {/* Due Process */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #f59e0b' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '600', padding: '4px 10px', borderRadius: '4px', background: 'rgba(245,158,11,0.2)', color: '#f59e0b' }}>5TH & 14TH AMENDMENTS</span>
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: '0 0 12px 0' }}>Deportations Without Due Process</h3>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>
+                Reports document individuals—including U.S. citizens and legal residents—being detained and in some cases deported without access to attorneys or immigration hearings. The ACLU has filed multiple emergency lawsuits citing due process violations.
+              </p>
+            </div>
+            <div style={{ padding: '12px 14px', background: 'rgba(245,158,11,0.06)', borderRadius: '8px', borderLeft: '2px solid #f59e0b' }}>
+              <div style={{ fontSize: '12px', color: '#f59e0b', marginBottom: '6px' }}>CONSTITUTIONAL TEXT</div>
+              <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>
+                "No person shall be... deprived of life, liberty, or property, without due process of law." — Fifth Amendment
+              </p>
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: ACLU • NPR • Washington Post • Court Filings</div>
+          </Card>
+
+          {/* First Amendment */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #3b82f6' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '600', padding: '4px 10px', borderRadius: '4px', background: 'rgba(59,130,246,0.2)', color: '#3b82f6' }}>1ST AMENDMENT</span>
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: '0 0 12px 0' }}>Threats Against Press and Protesters</h3>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>
+                The administration has called for revoking broadcast licenses of critical news networks, labeled journalists "enemies of the people," and federal agents have used force against peaceful protesters. Two U.S. citizens have been shot by federal agents during immigration protests in January 2026.
+              </p>
+            </div>
+            <div style={{ padding: '12px 14px', background: 'rgba(59,130,246,0.06)', borderRadius: '8px', borderLeft: '2px solid #3b82f6' }}>
+              <div style={{ fontSize: '12px', color: '#3b82f6', marginBottom: '6px' }}>CONSTITUTIONAL TEXT</div>
+              <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>
+                "Congress shall make no law... abridging the freedom of speech, or of the press; or the right of the people peaceably to assemble." — First Amendment
+              </p>
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Committee to Protect Journalists • PEN America • NPR • Video Evidence</div>
+          </Card>
+
+          {/* Emoluments */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #22c55e' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '600', padding: '4px 10px', borderRadius: '4px', background: 'rgba(34,197,94,0.2)', color: '#22c55e' }}>ARTICLE I, SECTION 9</span>
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: '0 0 12px 0' }}>Foreign Payments to President's Businesses</h3>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>
+                Foreign governments have spent millions at Trump properties. Saudi Arabia, China, and other nations have booked rooms at Trump hotels during official visits. The President has not divested from his businesses and continues to profit while in office.
+              </p>
+            </div>
+            <div style={{ padding: '12px 14px', background: 'rgba(34,197,94,0.06)', borderRadius: '8px', borderLeft: '2px solid #22c55e' }}>
+              <div style={{ fontSize: '12px', color: '#22c55e', marginBottom: '6px' }}>CONSTITUTIONAL TEXT</div>
+              <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>
+                "No Person holding any Office... shall, without the Consent of the Congress, accept of any present, Emolument... from any King, Prince, or foreign State." — Emoluments Clause
+              </p>
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: CREW • House Oversight Committee • GSA Records • Financial Times</div>
+          </Card>
+
+          {/* Pardon Power */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #ef4444' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '600', padding: '4px 10px', borderRadius: '4px', background: 'rgba(239,68,68,0.2)', color: '#ef4444' }}>ARTICLE II & RULE OF LAW</span>
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: '0 0 12px 0' }}>Pardons for January 6th Defendants</h3>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>
+                On his first day in office, President Trump issued pardons to over 1,500 individuals convicted of crimes related to the January 6th, 2021 Capitol attack, including those convicted of assaulting police officers. This included commutations for Oath Keepers and Proud Boys leaders convicted of seditious conspiracy.
+              </p>
+            </div>
+            <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.06)', borderRadius: '8px', borderLeft: '2px solid #ef4444' }}>
+              <div style={{ fontSize: '12px', color: '#ef4444', marginBottom: '6px' }}>CONCERN</div>
+              <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>
+                While the pardon power is constitutionally broad, using it to pardon those who attacked Congress during certification of an election the President lost raises unprecedented rule-of-law concerns.
+              </p>
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: DOJ Records • White House Statements • AP News • NPR</div>
+          </Card>
+
         </>}
 
         {/* MONEY */}
@@ -412,6 +523,7 @@ function App() {
             { c: 'Golf/Travel', s: 'GAO 2019 Report • CREW • HuffPost', icon: '⛳' },
             { c: 'Self-Dealing', s: 'CREW • American Oversight • House Oversight', icon: '🏨' },
             { c: 'Promises', s: 'PolitiFact • CNN • NPR • BLS • EIA', icon: '📝' },
+            { c: 'Constitution', s: 'Federal Court Records • ACLU • AP News • DOJ', icon: '📜' },
             { c: 'ICE/CBP', s: 'NPR • AP • ACLU • Vera Institute', icon: '⚠️' },
             { c: 'Israel Aid', s: 'Brown University • State Dept • Quincy', icon: '🌍' }
           ].map((x, i) => (
