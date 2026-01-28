@@ -30,6 +30,35 @@ const SEARCH_QUERIES = [
 ];
 
 // ----------------------
+// Deduplication helper
+// ----------------------
+function dedupeIceVictims(iceVictims) {
+  const map = new Map();
+
+  for (const victim of iceVictims) {
+    const key = [
+      victim.date,
+      victim.location,
+      victim.agency
+    ].join("|");
+
+    if (!map.has(key)) {
+      map.set(key, victim);
+    } else {
+      const existing = map.get(key);
+      const existingScore = JSON.stringify(existing).length;
+      const newScore = JSON.stringify(victim).length;
+
+      if (newScore > existingScore) {
+        map.set(key, victim);
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+// ----------------------
 // NEWS FETCHING
 // ----------------------
 async function fetchNewsRSS(query) {
@@ -268,6 +297,11 @@ IMPORTANT: Only report incidents that are clearly **new**. Do not invent data. R
         }];
         madeChanges = true;
       }
+    }
+
+    // Deduplicate ICE victims before saving
+    if (currentData.iceVictims && currentData.iceVictims.length > 1) {
+      currentData.iceVictims = dedupeIceVictims(currentData.iceVictims);
     }
 
     // brokenPromiseEvidence
