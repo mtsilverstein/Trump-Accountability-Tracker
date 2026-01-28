@@ -177,9 +177,9 @@ function App() {
         </div>
       </header>
 
-      {/* Nav - using divs instead of buttons for better mobile compat */}
+      {/* Nav */}
       <nav style={{ background: '#0a0a0f', position: 'sticky', top: 0, zIndex: 1000, borderBottom: '1px solid #1a1a22' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', padding: '0 8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', justifyContent: 'space-around', padding: '0' }}>
           {tabs.map(t => (
             <NavButton key={t.id} active={activeTab === t.id} onClick={() => handleTabClick(t.id)} icon={t.icon} label={t.label} />
           ))}
@@ -197,7 +197,7 @@ function App() {
             <Card glow="#ef4444">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <span style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500' }}>U.S. National Debt</span>
-                <span style={{ fontSize: '9px', color: '#ef4444', background: 'rgba(239,68,68,0.15)', padding: '4px 10px', borderRadius: '4px', fontWeight: '600' }}>● LIVE</span>
+                <span style={{ fontSize: '9px', color: '#ef4444', background: 'rgba(239,68,68,0.15)', padding: '4px 10px', borderRadius: '4px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite' }}></span> LIVE</span>
               </div>
               <div style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '-1px' }}>
                 ${(liveDebt / 1e12).toFixed(6)}T
@@ -205,7 +205,7 @@ function App() {
               <div style={{ fontSize: '12px', color: '#6b6b7b', margin: '8px 0 16px' }}>+{fmt(data.debt?.perSecond || 92912.33, 0)}/second</div>
               <div style={{ padding: '14px 16px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.15)' }}>
                 <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Added This Term</div>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>+{fmt(debtSinceInauguration)}</div>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+${(debtSinceInauguration / 1e12).toFixed(6)}T</div>
               </div>
             </Card>
 
@@ -231,20 +231,28 @@ function App() {
             </Card>
           </div>
 
-          {/* The Contrast - clean visual design */}
+          {/* The Contrast - clean visual design with arrows */}
           <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
             <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '24px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '16px', alignItems: 'center' }}>
-              <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(34,197,94,0.06)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.15)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '12px', alignItems: 'center' }}>
+              <div style={{ textAlign: 'center', padding: '20px 16px', background: 'rgba(34,197,94,0.06)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.15)' }}>
                 <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>Trump's Gain</div>
-                <div style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
-                <div style={{ width: '60%', height: '4px', background: 'linear-gradient(90deg, #22c55e 0%, #22c55e 100%)', borderRadius: '2px', margin: '12px auto 0' }} />
+                <div style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '12px' }}>
+                  <div style={{ width: '50%', height: '4px', background: 'linear-gradient(90deg, #22c55e 0%, #22c55e 100%)', borderRadius: '2px 0 0 2px' }} />
+                  <div style={{ width: 0, height: 0, borderLeft: '8px solid #22c55e', borderTop: '6px solid transparent', borderBottom: '6px solid transparent' }} />
+                </div>
+                <div style={{ fontSize: '10px', color: '#22c55e', marginTop: '8px' }}>▲ UP</div>
               </div>
-              <div style={{ fontSize: '16px', color: '#2a2a3a', fontWeight: '600' }}>vs</div>
-              <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(239,68,68,0.06)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.15)' }}>
+              <div style={{ fontSize: '14px', color: '#2a2a3a', fontWeight: '600' }}>vs</div>
+              <div style={{ textAlign: 'center', padding: '20px 16px', background: 'rgba(239,68,68,0.06)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.15)' }}>
                 <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>Added to Debt</div>
-                <div style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
-                <div style={{ width: '100%', height: '4px', background: 'linear-gradient(90deg, #ef4444 0%, #ef4444 100%)', borderRadius: '2px', margin: '12px auto 0' }} />
+                <div style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '12px' }}>
+                  <div style={{ width: 0, height: 0, borderRight: '8px solid #ef4444', borderTop: '6px solid transparent', borderBottom: '6px solid transparent' }} />
+                  <div style={{ width: '70%', height: '4px', background: 'linear-gradient(90deg, #ef4444 0%, #ef4444 100%)', borderRadius: '0 2px 2px 0' }} />
+                </div>
+                <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '8px' }}>▼ LOSS</div>
               </div>
             </div>
             <div style={{ marginTop: '20px', padding: '14px 16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', fontSize: '13px', color: '#a8a8b8', textAlign: 'center' }}>
@@ -544,6 +552,54 @@ function App() {
             <div style={{ marginTop: '16px', padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', fontSize: '12px', color: '#888' }}>
               <strong style={{ color: '#a8a8b8' }}>Found an error?</strong> We welcome corrections with sources.
             </div>
+          </Card>
+
+          {/* Take Action */}
+          <Card style={{ marginTop: '24px', borderLeft: '3px solid #3b82f6' }}>
+            <h3 style={{ fontSize: '14px', color: '#3b82f6', margin: '0 0 16px 0', fontWeight: '600' }}>📞 Take Action</h3>
+            <p style={{ fontSize: '13px', color: '#6b6b7b', margin: '0 0 16px 0', lineHeight: 1.7 }}>
+              Your representatives work for you. Contact them about issues that matter.
+            </p>
+            
+            <a 
+              href="https://www.house.gov/representatives/find-your-representative" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ display: 'block', padding: '14px 16px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '8px', marginBottom: '10px', textDecoration: 'none' }}
+            >
+              <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>Find Your Representative</div>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>house.gov — U.S. House of Representatives</div>
+            </a>
+            
+            <a 
+              href="https://www.senate.gov/senators/senators-contact.htm" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ display: 'block', padding: '14px 16px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '8px', marginBottom: '10px', textDecoration: 'none' }}
+            >
+              <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>Contact Your Senators</div>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>senate.gov — U.S. Senate</div>
+            </a>
+            
+            <a 
+              href="https://www.usa.gov/elected-officials" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ display: 'block', padding: '14px 16px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '8px', marginBottom: '10px', textDecoration: 'none' }}
+            >
+              <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>All Elected Officials</div>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>usa.gov — Federal, state, and local contacts</div>
+            </a>
+
+            <a 
+              href="https://www.aclu.org/take-action" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ display: 'block', padding: '14px 16px', background: 'rgba(147,51,234,0.1)', border: '1px solid rgba(147,51,234,0.3)', borderRadius: '8px', textDecoration: 'none' }}
+            >
+              <div style={{ fontSize: '13px', color: '#a855f7', fontWeight: '600' }}>ACLU Action Center</div>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>Petitions and campaigns for civil liberties</div>
+            </a>
           </Card>
         </>}
       </main>

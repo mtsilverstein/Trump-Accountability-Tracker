@@ -1,415 +1,336 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from './supabaseClient';
-import { INITIAL_DATA } from './initialData';
+/**
+ * Vercel API: Auto-update tracker with real news fetching
+ * 
+ * 1. Fetches recent news from Google News RSS (free)
+ * 2. Sends headlines to Gemini for analysis
+ * 3. Updates Supabase if new data found
+ */
 
-function App() {
-  const [data, setData] = useState(INITIAL_DATA);
-  const [loading, setLoading] = useState(true);
-  const [lastSync, setLastSync] = useState(null);
-  const [now, setNow] = useState(Date.now());
-  const [activeTab, setActiveTab] = useState('overview');
-  
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 100);
-    return () => clearInterval(interval);
-  }, []);
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const CRON_SECRET = process.env.CRON_SECRET;
 
-  useEffect(() => {
-    fetchData();
-    const channel = supabase.channel('tracker-updates')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tracker_data' },
-        (payload) => { if (payload.new?.data) { setData(payload.new.data); setLastSync(new Date().toISOString()); } })
-      .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, []);
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
 
-  async function fetchData() {
-    try {
-      const { data: result, error } = await supabase.from('tracker_data').select('data, updated_at').eq('id', 'main').single();
-      if (error) throw error;
-      if (result?.data && Object.keys(result.data).length > 0) { setData(result.data); setLastSync(result.updated_at); }
-    } catch (err) { console.error('Error:', err); }
-    finally { setLoading(false); }
+// News search queries
+const SEARCH_QUERIES = [
+  'Trump broken promise fact check',
+  'Trump tariff manufacturing jobs',
+  'Trump grocery prices',
+  'ICE shooting death',
+  'Border Patrol shooting',
+  'Trump golf cost taxpayer',
+  'Trump net worth',
+  'Trump self dealing',
+  'Trump corruption',
+  'Trump court order defied',
+  'Trump deportation due process',
+  'Trump constitutional violation',
+];
+
+// Fetch news using Google News RSS (free, no API key needed)
+async function fetchNewsRSS(query) {
+  try {
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+    const response = await fetch(url);
+    const text = await response.text();
+    
+    const items = [];
+    const itemMatches = text.match(/<item>([\s\S]*?)<\/item>/g) || [];
+    
+    for (const item of itemMatches.slice(0, 3)) {
+      const title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1') || '';
+      const link = item.match(/<link>([\s\S]*?)<\/link>/)?.[1] || '';
+      const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || '';
+      
+      if (title && link) {
+        items.push({ title, link, pubDate, query });
+      }
+    }
+    
+    return items;
+  } catch (err) {
+    console.error(`Error fetching news for "${query}":`, err);
+    return [];
   }
-
-  const INAUGURATION = new Date('2025-01-20T17:00:00Z');
-  const liveDebt = useMemo(() => {
-    const baselineDate = new Date(data.debt?.baselineDate || '2026-01-07T00:00:00Z');
-    return ((data.debt?.baseline || 38.43) * 1e12) + (((now - baselineDate.getTime()) / 1000) * (data.debt?.perSecond || 92912.33));
-  }, [now, data.debt]);
-  const debtSinceInauguration = liveDebt - ((data.debt?.atInauguration || 36.18) * 1e12);
-  const timeSinceInauguration = useMemo(() => {
-    const sec = Math.floor((now - INAUGURATION.getTime()) / 1000);
-    return { days: Math.floor(sec / 86400), hours: Math.floor((sec % 86400) / 3600), minutes: Math.floor((sec % 3600) / 60), seconds: sec % 60 };
-  }, [now]);
-  
-  const wealthGain = (data.wealth?.current || 6.6) - (data.wealth?.previous || 2.3);
-  const wealthGainPercent = Math.round((wealthGain / (data.wealth?.previous || 2.3)) * 100);
-  const golf = data.golf || {};
-  const totalGolfCost = ((golf.marALagoTrips || 0) * (golf.marALagoCost || 0)) + ((golf.bedminsterTrips || 0) * (golf.bedminsterCost || 0)) + ((golf.scotlandTrips || 0) * (golf.scotlandCost || 0));
-  const totalTrips = (golf.marALagoTrips || 0) + (golf.bedminsterTrips || 0) + (golf.scotlandTrips || 0);
-  const selfDealing = data.selfDealing || {};
-  const selfDealingFromGolf = totalTrips * (selfDealing.revenuePerTrip || 60000);
-
-  const fmt = (val, dec = 2) => {
-    if (val >= 1e12) return `$${(val / 1e12).toFixed(dec)}T`;
-    if (val >= 1e9) return `$${(val / 1e9).toFixed(dec)}B`;
-    if (val >= 1e6) return `$${(val / 1e6).toFixed(dec)}M`;
-    if (val >= 1e3) return `$${(val / 1e3).toFixed(dec)}K`;
-    return `$${val.toLocaleString()}`;
-  };
-  const pad = (n) => String(n).padStart(2, '0');
-
-  const iceVictims = data.iceVictims || [];
-  const iceStats = data.iceStats || {};
-  const brokenPromises = data.brokenPromises || [];
-  const wealth = data.wealth || {};
-
-  const handleTabClick = (tabId) => {
-    setActiveTab(tabId);
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  };
-
-  // Track if user is swiping vs tapping
-  const [touchStart, setTouchStart] = useState(null);
-
-  if (loading) return <div style={{ minHeight: '100vh', background: '#0f0f14', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', color: '#888' }}>Loading...</div>;
-
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: '📊' },
-    { id: 'promises', label: 'Promises', icon: '❌' },
-    { id: 'money', label: 'Money', icon: '💰' },
-    { id: 'ice', label: 'ICE Deaths', icon: '⚠️' },
-    { id: 'sources', label: 'Sources', icon: '📑' },
-  ];
-
-  const Card = ({ children, style }) => <div style={{ background: '#16161e', borderRadius: '12px', padding: '24px', border: '1px solid #252530', ...style }}>{children}</div>;
-  
-  const ActionButton = ({ onClick, children, color = '#f97316', style = {} }) => (
-    <button 
-      onClick={onClick}
-      style={{ 
-        padding: '12px 20px', 
-        background: `${color}15`, 
-        border: `1px solid ${color}50`, 
-        borderRadius: '8px', 
-        color: color, 
-        fontSize: '13px', 
-        fontWeight: '600',
-        cursor: 'pointer', 
-        fontFamily: 'inherit',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        touchAction: 'manipulation',
-        transition: 'opacity 0.15s',
-        ...style 
-      }}
-    >{children}</button>
-  );
-
-  // Page header component for consistency
-  const PageHeader = ({ title, subtitle }) => (
-    <div style={{ marginBottom: '24px' }}>
-      <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#fff', margin: '0 0 8px 0' }}>{title}</h2>
-      {subtitle && <p style={{ fontSize: '14px', color: '#6b6b7b', margin: 0 }}>{subtitle}</p>}
-    </div>
-  );
-
-  return (
-    <div style={{ minHeight: '100vh', background: '#0f0f14', fontFamily: 'Inter, -apple-system, sans-serif', color: '#e8e8ed', lineHeight: 1.6 }}>
-      {/* Header */}
-      <header style={{ borderBottom: '1px solid #1e1e28', padding: '24px 20px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite' }} />
-            <span style={{ fontSize: '10px', letterSpacing: '2px', color: '#ef4444', fontWeight: '600' }}>LIVE ACCOUNTABILITY TRACKER</span>
-          </div>
-          <h1 style={{ fontSize: 'clamp(26px, 6vw, 42px)', fontWeight: '700', color: '#fff', margin: '0 0 8px 0' }}>Trump Administration</h1>
-          <p style={{ fontSize: '14px', color: '#6b6b7b', margin: '0 0 20px 0' }}>Facts with sources. Updated automatically.</p>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '12px 20px', background: '#16161e', borderRadius: '8px', border: '1px solid #252530' }}>
-            <span style={{ fontSize: '12px', color: '#6b6b7b' }}>Term to Date:</span>
-            <span style={{ fontSize: '18px', fontWeight: '600', fontFamily: 'JetBrains Mono, monospace', color: '#fff' }}>
-              {timeSinceInauguration.days}d {pad(timeSinceInauguration.hours)}h {pad(timeSinceInauguration.minutes)}m {pad(timeSinceInauguration.seconds)}s
-            </span>
-          </div>
-          {lastSync && <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>Last sync: {new Date(lastSync).toLocaleString()}</div>}
-        </div>
-      </header>
-
-      {/* Nav - fixed swipe issue */}
-      <nav style={{ borderBottom: '1px solid #1e1e28', background: '#0f0f14', position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '2px', padding: '8px 16px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {tabs.map(t => (
-            <button 
-              key={t.id}
-              onTouchStart={(e) => setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
-              onTouchEnd={(e) => {
-                if (!touchStart) return;
-                const touch = e.changedTouches[0];
-                const dx = Math.abs(touch.clientX - touchStart.x);
-                const dy = Math.abs(touch.clientY - touchStart.y);
-                // Only trigger click if it wasn't a swipe (moved less than 10px)
-                if (dx < 10 && dy < 10) {
-                  handleTabClick(t.id);
-                }
-                setTouchStart(null);
-              }}
-              onClick={(e) => {
-                // Desktop clicks
-                if (!('ontouchstart' in window)) {
-                  handleTabClick(t.id);
-                }
-              }}
-              style={{
-                padding: '10px 14px', 
-                background: activeTab === t.id ? '#252530' : 'transparent', 
-                border: 'none', 
-                borderRadius: '6px',
-                color: activeTab === t.id ? '#fff' : '#6b6b7b', 
-                cursor: 'pointer', 
-                fontSize: '12px', 
-                fontWeight: activeTab === t.id ? '600' : '500', 
-                fontFamily: 'inherit', 
-                whiteSpace: 'nowrap',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-                WebkitTapHighlightColor: 'transparent',
-                transition: 'background 0.15s, color 0.15s'
-              }}
-            ><span style={{ marginRight: '6px' }}>{t.icon}</span>{t.label}</button>
-          ))}
-        </div>
-      </nav>
-
-      {/* Main */}
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 20px' }}>
-        
-        {/* OVERVIEW */}
-        {activeTab === 'overview' && <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-            {/* Debt */}
-            <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <span style={{ fontSize: '13px', color: '#6b6b7b' }}>U.S. National Debt</span>
-                <span style={{ fontSize: '10px', color: '#ef4444', background: 'rgba(239,68,68,0.15)', padding: '4px 8px', borderRadius: '4px', fontWeight: '600' }}>● LIVE</span>
-              </div>
-              <div style={{ fontSize: '32px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>${(liveDebt / 1e12).toFixed(6)}T</div>
-              <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '8px' }}>+{fmt(data.debt?.perSecond || 92912.33, 0)}/second</div>
-              <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(239,68,68,0.08)', borderRadius: '8px' }}>
-                <div style={{ fontSize: '11px', color: '#6b6b7b' }}>Added Term to Date</div>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: '#ef4444', marginTop: '4px' }}>+{fmt(debtSinceInauguration)}</div>
-              </div>
-            </Card>
-            {/* Wealth */}
-            <Card>
-              <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Trump Personal Net Worth</div>
-              <div style={{ fontSize: '32px', fontWeight: '700', color: '#22c55e' }}>${wealth.current || 6.6}B</div>
-              <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '8px' }}>Forbes • Rank #{wealth.rank || 581}</div>
-              <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(34,197,94,0.08)', borderRadius: '8px' }}>
-                <div style={{ fontSize: '11px', color: '#6b6b7b' }}>Gained Since Jan 2024</div>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: '#22c55e', marginTop: '4px' }}>+${wealthGain.toFixed(1)}B (+{wealthGainPercent}%)</div>
-              </div>
-            </Card>
-            {/* Promises */}
-            <Card>
-              <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Campaign Promises</div>
-              <div style={{ fontSize: '32px', fontWeight: '700', color: '#f97316' }}>{brokenPromises.filter(p => p.status === 'BROKEN').length}/{brokenPromises.length}</div>
-              <div style={{ fontSize: '14px', color: '#f97316', marginTop: '8px' }}>Broken</div>
-              <ActionButton onClick={() => handleTabClick('promises')} color="#f97316" style={{ marginTop: '16px', width: '100%' }}>View All →</ActionButton>
-            </Card>
-          </div>
-
-          {/* Contrast */}
-          <Card style={{ marginBottom: '32px', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '12px', letterSpacing: '2px', color: '#6b6b7b', margin: '0 0 24px 0' }}>THE CONTRAST</h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '32px' }}>
-              <div><div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '8px' }}>Trump's Gain</div><div style={{ fontSize: '36px', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div></div>
-              <div style={{ fontSize: '24px', color: '#3a3a4a' }}>vs</div>
-              <div><div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '8px' }}>Added to Your Debt</div><div style={{ fontSize: '36px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div></div>
-            </div>
-            <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(239,68,68,0.08)', borderRadius: '8px' }}>
-              For every <span style={{ color: '#22c55e', fontWeight: '600' }}>$1</span> Trump gained, debt increased by <span style={{ color: '#ef4444', fontWeight: '700', fontSize: '18px' }}>${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}</span>
-            </div>
-          </Card>
-
-          {/* ICE */}
-          <Card style={{ marginBottom: '32px', borderColor: '#dc2626' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#dc2626', boxShadow: '0 0 12px rgba(220,38,38,0.5)' }} />
-              <h2 style={{ fontSize: '14px', color: '#fca5a5', margin: 0 }}>U.S. Citizens Killed by Federal Immigration Agents</h2>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-              {iceVictims.map(v => (
-                <div key={v.id} style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: '8px', padding: '16px' }}>
-                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#fff' }}>{v.name}</div>
-                  <div style={{ fontSize: '12px', color: '#fca5a5', marginTop: '4px' }}>Age {v.age} • {v.citizenship} • {v.agency}</div>
-                  <div style={{ fontSize: '12px', color: '#6b6b7b' }}>{v.date} • {v.location}</div>
-                </div>
-              ))}
-            </div>
-            <ActionButton onClick={() => handleTabClick('ice')} color="#fca5a5" style={{ marginTop: '16px' }}>Full Details →</ActionButton>
-          </Card>
-
-          {/* Golf */}
-          <Card>
-            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Taxpayer-Funded Golf (Term to Date)</div>
-            <div style={{ fontSize: '32px', fontWeight: '700', color: '#eab308' }}>${totalGolfCost.toFixed(1)}M</div>
-            <div style={{ fontSize: '13px', color: '#6b6b7b', marginTop: '8px' }}>{totalTrips} trips • {golf.propertyVisits2025 || 0} property visits</div>
-            <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(234,179,8,0.08)', borderRadius: '8px', fontSize: '13px', color: '#a8a8b8', lineHeight: 1.6 }}>
-              <strong style={{ color: '#eab308' }}>Why it matters:</strong> Taxpayers pay for Secret Service at resorts Trump profits from. Est. <strong style={{ color: '#eab308' }}>{fmt(selfDealingFromGolf)}</strong> to his pocket.
-            </div>
-            <ActionButton onClick={() => handleTabClick('money')} color="#eab308" style={{ marginTop: '16px' }}>Full Breakdown →</ActionButton>
-          </Card>
-        </>}
-
-        {/* PROMISES */}
-        {activeTab === 'promises' && <>
-          <PageHeader title="Broken Campaign Promises" subtitle="Exact quotes matched against verifiable outcomes." />
-          {brokenPromises.map(p => (
-            <Card key={p.id} style={{ marginBottom: '16px', borderLeft: `3px solid ${p.statusColor || '#ef4444'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-                <div><div style={{ fontSize: '11px', color: '#6b6b7b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>{p.category}</div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#fff', margin: 0 }}>{p.promise}</h3>
-                  <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '4px' }}>{p.datePromised}</div></div>
-                <div style={{ padding: '6px 12px', background: `${p.statusColor || '#ef4444'}20`, borderRadius: '4px', fontSize: '11px', fontWeight: '600', color: p.statusColor || '#ef4444', height: 'fit-content' }}>{p.status}</div>
-              </div>
-              <div style={{ padding: '16px', background: '#0f0f14', borderRadius: '8px', borderLeft: `2px solid ${p.statusColor || '#ef4444'}`, marginBottom: '16px' }}>
-                <div style={{ fontSize: '14px', color: '#a8a8b8', fontStyle: 'italic' }}>"{p.quote}"</div>
-              </div>
-              {p.deadline && <div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '12px' }}><strong>Deadline:</strong> {p.deadline}</div>}
-              <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '11px', color: '#6b6b7b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Reality</div>
-                {(p.reality || []).map((f, i) => <div key={i} style={{ fontSize: '13px', color: '#d4d4dc', padding: '8px 0 8px 16px', borderLeft: '2px solid #3a3a4a', marginBottom: '4px' }}>{f}</div>)}
-              </div>
-              <div style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#6b6b7b', marginBottom: '6px' }}><span>Fulfilled</span><span>{p.progress || 0}%</span></div>
-                <div style={{ height: '4px', background: '#252530', borderRadius: '2px' }}><div style={{ height: '100%', width: `${p.progress || 0}%`, background: p.statusColor || '#ef4444', borderRadius: '2px' }} /></div>
-              </div>
-              <div style={{ fontSize: '11px', color: '#4a4a5a' }}>Sources: {(p.sources || []).join(' • ')}</div>
-            </Card>
-          ))}
-        </>}
-
-        {/* MONEY */}
-        {activeTab === 'money' && <>
-          <PageHeader title="Follow the Money" subtitle="Self-dealing, conflicts of interest, and taxpayer money flowing to Trump businesses." />
-          <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, rgba(234,179,8,0.1) 0%, #16161e 100%)', borderColor: 'rgba(234,179,8,0.3)' }}>
-            <h3 style={{ fontSize: '14px', color: '#eab308', margin: '0 0 12px 0' }}>The Key Insight Most People Miss</h3>
-            <p style={{ fontSize: '15px', color: '#e8e8ed', lineHeight: 1.7, margin: 0 }}>
-              When Trump golfs at Mar-a-Lago, taxpayers pay for Secret Service rooms <strong style={{ color: '#eab308' }}>at a resort he owns</strong>. This money goes <strong style={{ color: '#eab308' }}>directly into his bank account</strong>.
-            </p>
-          </Card>
-          
-          {/* Golf Self-Dealing - Current Term */}
-          <Card style={{ marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '14px', color: '#eab308', margin: '0 0 16px 0' }}>Golf Trip Self-Dealing (Term to Date)</h3>
-            {[
-              { l: 'Golf trips to Trump properties', v: totalTrips, source: 'CREW' },
-              { l: 'Total property visits', v: golf.propertyVisits2025 || 129, source: 'CREW' },
-              { l: 'Est. taxpayer cost per trip', v: fmt(selfDealing.revenuePerTrip || 60000), source: 'GAO 2019' },
-            ].map((r, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#0f0f14', borderRadius: '6px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', color: '#6b6b7b' }}>{r.l}</span>
-                <span style={{ fontSize: '13px' }}><span style={{ color: '#eab308', fontWeight: '600' }}>{r.v}</span> <span style={{ color: '#4a4a5a', fontSize: '10px' }}>({r.source})</span></span>
-              </div>
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px', background: 'rgba(234,179,8,0.1)', borderRadius: '6px', marginTop: '8px' }}>
-              <span style={{ fontWeight: '600', color: '#fff' }}>Est. to Trump's pocket (term to date)</span>
-              <span style={{ fontSize: '18px', fontWeight: '700', color: '#eab308' }}>{fmt(selfDealingFromGolf)}</span>
-            </div>
-            <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>
-              Calculation: trips × $60K/trip (GAO methodology). Actual amounts reported via FOIA with lag.
-            </div>
-          </Card>
-
-          {/* Crypto */}
-          <Card style={{ marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '14px', color: '#22c55e', margin: '0 0 16px 0' }}>Crypto Ventures (Term to Date)</h3>
-            <div style={{ fontSize: '32px', fontWeight: '700', color: '#22c55e', marginBottom: '8px' }}>{fmt(selfDealing.cryptoFees || 427000000)}</div>
-            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Trading fees from $TRUMP memecoin + World Liberty Financial</div>
-            <div style={{ fontSize: '11px', color: '#4a4a5a' }}>
-              Sources: Financial Times • Bloomberg • On-chain data
-            </div>
-          </Card>
-
-          {/* Israel Aid */}
-          <Card>
-            <h3 style={{ fontSize: '14px', color: '#60a5fa', margin: '0 0 16px 0' }}>"America First" vs Military Aid to Israel</h3>
-            <div style={{ fontSize: '32px', fontWeight: '700', color: '#60a5fa', marginBottom: '8px' }}>$21.7B+</div>
-            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>U.S. military aid to Israel since Oct 2023 (Biden + Trump terms)</div>
-            {[{ l: 'Arms sales notified since Jan 2025', v: '$10.1B+' }, { l: 'Emergency expedited transfer (Mar 2025)', v: '$4B' }, { l: 'Bypassed Congress for approval', v: '2 times' }].map((r, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#0f0f14', borderRadius: '6px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', color: '#6b6b7b' }}>{r.l}</span><span style={{ fontSize: '13px', color: '#60a5fa', fontWeight: '600' }}>{r.v}</span>
-              </div>
-            ))}
-            <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Brown University Costs of War • State Dept • Quincy Institute</div>
-          </Card>
-        </>}
-
-        {/* ICE */}
-        {activeTab === 'ice' && <>
-          <PageHeader title="U.S. Citizens Killed by Federal Immigration Agents" subtitle="Documented incidents with official and witness accounts." />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-            {[{ v: iceVictims.filter(x => x.citizenship === 'US Citizen').length, l: 'US Citizens Killed', c: '#dc2626' },
-              { v: `${iceStats.totalShootings || 27}+`, l: 'Total Shootings', c: '#ef4444' },
-              { v: iceStats.shootingDeaths || 8, l: 'Shooting Deaths', c: '#f87171' },
-              { v: iceStats.detentionDeaths2025 || 32, l: '2025 Detention Deaths', c: '#fca5a5' }
-            ].map((s, i) => <div key={i} style={{ textAlign: 'center', padding: '16px', background: 'rgba(220,38,38,0.08)', borderRadius: '8px', border: '1px solid rgba(220,38,38,0.2)' }}><div style={{ fontSize: '28px', fontWeight: '700', color: s.c }}>{s.v}</div><div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>{s.l}</div></div>)}
-          </div>
-          <div style={{ padding: '16px', background: 'rgba(220,38,38,0.08)', borderRadius: '8px', marginBottom: '24px', fontSize: '13px', color: '#fca5a5' }}>
-            <strong>Context:</strong> 2025 had highest ICE detention deaths since 2004. December 2025 was deadliest month on record.
-          </div>
-          {iceVictims.map(v => (
-            <Card key={v.id} style={{ marginBottom: '16px', borderColor: '#dc2626' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#fff', margin: '0 0 4px 0' }}>{v.name}</h3>
-              <div style={{ fontSize: '13px', color: '#fca5a5' }}>Age {v.age} • {v.citizenship} • {v.agency}</div>
-              <div style={{ fontSize: '12px', color: '#6b6b7b' }}>{v.date} • {v.location}</div>
-              <div style={{ padding: '16px', background: '#0f0f14', borderRadius: '8px', margin: '16px 0', fontSize: '14px', color: '#d4d4dc', lineHeight: 1.6 }}>{v.details}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ padding: '12px', background: 'rgba(220,38,38,0.08)', borderRadius: '6px' }}><div style={{ fontSize: '10px', color: '#fca5a5', marginBottom: '6px', fontWeight: '600' }}>OFFICIAL</div><div style={{ fontSize: '12px', color: '#a8a8b8' }}>{v.officialResponse}</div></div>
-                <div style={{ padding: '12px', background: 'rgba(34,197,94,0.08)', borderRadius: '6px' }}><div style={{ fontSize: '10px', color: '#86efac', marginBottom: '6px', fontWeight: '600' }}>WITNESS</div><div style={{ fontSize: '12px', color: '#a8a8b8' }}>{v.witnessAccount}</div></div>
-              </div>
-              <div style={{ fontSize: '11px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {(v.sources || []).join(' • ')}</div>
-            </Card>
-          ))}
-        </>}
-
-        {/* SOURCES */}
-        {activeTab === 'sources' && <>
-          <PageHeader title="Data Sources & Methodology" subtitle="Every claim is backed by reputable, mainstream sources." />
-          {[{ c: 'National Debt', s: 'Treasury Debt to the Penny • JEC • CBO' },
-            { c: 'Wealth', s: 'Forbes • Bloomberg • NYT' },
-            { c: 'Golf/Travel', s: 'GAO 2019 Report • CREW • HuffPost' },
-            { c: 'Self-Dealing', s: 'CREW • American Oversight • House Oversight • FT' },
-            { c: 'Promises', s: 'PolitiFact • CNN Fact Check • NPR • BLS • EIA' },
-            { c: 'ICE/CBP', s: 'Wikipedia • NPR • AP • ACLU • Vera Institute' },
-            { c: 'Israel Aid', s: 'Brown Costs of War • State Dept • Quincy • CFR' }
-          ].map((x, i) => <Card key={i} style={{ marginBottom: '12px', padding: '16px' }}><h3 style={{ fontSize: '13px', color: '#fff', margin: '0 0 8px 0' }}>{x.c}</h3><div style={{ fontSize: '12px', color: '#6b6b7b' }}>{x.s}</div></Card>)}
-          <Card style={{ marginTop: '24px' }}>
-            <h3 style={{ fontSize: '13px', color: '#fff', margin: '0 0 12px 0' }}>Methodology</h3>
-            <p style={{ fontSize: '13px', color: '#6b6b7b', margin: 0, lineHeight: 1.7 }}>
-              Objective, verifiable facts. All claims require mainstream sources. ICE incidents require multiple sources. Auto-updates via AI monitoring.<br/><br/>
-              <strong style={{ color: '#a8a8b8' }}>Found an error?</strong> Open to corrections with sources.
-            </p>
-          </Card>
-        </>}
-      </main>
-
-      <footer style={{ borderTop: '1px solid #1e1e28', padding: '40px 20px', textAlign: 'center' }}>
-        <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '8px' }}>Built for transparency</div>
-        <div style={{ fontSize: '11px', color: '#4a4a5a' }}>Auto-updates via AI news monitoring • Data refreshed every 30 minutes</div>
-      </footer>
-
-      <style>{`
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-        *{box-sizing:border-box}
-        ::selection{background:rgba(239,68,68,.3)}
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
-        nav div::-webkit-scrollbar{display:none}
-        button:active{transform:scale(0.98)}
-      `}</style>
-    </div>
-  );
 }
 
-export default App;
+async function fetchAllNews() {
+  const allNews = [];
+  
+  for (const query of SEARCH_QUERIES) {
+    const news = await fetchNewsRSS(query);
+    allNews.push(...news);
+  }
+  
+  const seen = new Set();
+  return allNews.filter(item => {
+    if (seen.has(item.title)) return false;
+    seen.add(item.title);
+    return true;
+  });
+}
+
+async function callGemini(prompt) {
+  const response = await fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+    }),
+  });
+  
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Gemini error: ${response.status} - ${err}`);
+  }
+  
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function getCurrentData() {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main&select=data`,
+    {
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    }
+  );
+  if (!response.ok) throw new Error('Failed to fetch current data');
+  const result = await response.json();
+  return result[0]?.data || {};
+}
+
+async function updateData(newData) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main`,
+    {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        data: newData,
+        updated_at: new Date().toISOString(),
+      }),
+    }
+  );
+  if (!response.ok) throw new Error(`Failed to update: ${await response.text()}`);
+  return true;
+}
+
+async function analyzeAndUpdate() {
+  console.log('Fetching news...');
+  const news = await fetchAllNews();
+  console.log(`Found ${news.length} news items`);
+  
+  if (news.length === 0) {
+    return { updated: false, reason: 'No news found' };
+  }
+  
+  const currentData = await getCurrentData();
+  const newsText = news.map(n => `- ${n.title} (${n.pubDate})`).join('\n');
+  
+  const prompt = `You are analyzing recent news headlines to update a Trump accountability tracker.
+
+RECENT NEWS HEADLINES:
+${newsText}
+
+CURRENT TRACKER DATA:
+- Broken promises tracked: ${currentData.brokenPromises?.length || 0}
+- ICE victims: ${currentData.iceVictims?.map(v => v.name).join(', ') || 'None'}
+- Golf trips: ${(currentData.golf?.marALagoTrips || 0) + (currentData.golf?.bedminsterTrips || 0) + (currentData.golf?.scotlandTrips || 0)} total
+
+Based on ONLY the news headlines above, identify ANY new information:
+
+1. NEW ICE/CBP incidents involving deaths or shootings (especially US citizens)
+2. NEW evidence of broken promises (specific data contradicting Trump claims)
+3. NEW self-dealing incidents (taxpayer money to Trump properties)
+4. UPDATED statistics (new golf trips, costs, wealth estimates from Forbes)
+
+IMPORTANT: Only report information clearly stated in headlines. Do not invent data.
+
+Return JSON:
+{
+  "hasUpdates": true/false,
+  "updates": {
+    "newIceIncident": { "name": "", "date": "", "location": "", "details": "", "agency": "" } or null,
+    "brokenPromiseEvidence": { "promiseId": "groceries-down|manufacturing-jobs|energy-50|ukraine-24h|day-one-inflation|epstein-files|drill-baby-drill|medicare-medicaid", "newFact": "specific new fact" } or null,
+    "newGolfTrips": number or null,
+    "wealthUpdate": { "amount": number, "source": "Forbes/Bloomberg" } or null
+  },
+  "reasoning": "What was found and why it matters",
+  "headlineSource": "The specific headline this came from"
+}
+
+If nothing new: { "hasUpdates": false, "reasoning": "No new trackable data in headlines" }
+
+Return ONLY valid JSON, no markdown.`;
+
+  console.log('Calling Gemini...');
+  const response = await callGemini(prompt);
+  
+  let result;
+  try {
+    const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    result = JSON.parse(cleaned);
+  } catch (e) {
+    console.error('Parse error:', response);
+    return { updated: false, error: 'Parse error', raw: response.substring(0, 500) };
+  }
+  
+  if (result.hasUpdates && result.updates) {
+    let madeChanges = false;
+    
+    // New ICE incident - check for duplicates by name, location, and date
+    if (result.updates.newIceIncident?.name) {
+      const ni = result.updates.newIceIncident;
+      const nameLower = ni.name.toLowerCase();
+      const locationLower = (ni.location || '').toLowerCase();
+      const incidentDate = ni.date || '';
+      
+      // Extract month and day for date comparison (handles "January 24, 2026" format)
+      const extractDateParts = (dateStr) => {
+        const months = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+        const lower = dateStr.toLowerCase();
+        const month = months.find(m => lower.includes(m));
+        const dayMatch = lower.match(/\d{1,2}/);
+        const yearMatch = lower.match(/202\d/);
+        return { month, day: dayMatch?.[0], year: yearMatch?.[0] };
+      };
+      
+      const newDate = extractDateParts(incidentDate);
+      
+      // Check if already exists
+      const exists = currentData.iceVictims?.some(v => {
+        const vNameLower = v.name.toLowerCase();
+        const vLocationLower = (v.location || '').toLowerCase();
+        const vDate = extractDateParts(v.date || '');
+        
+        // Same date AND same location = likely same incident
+        const sameDate = newDate.month && vDate.month && 
+                         newDate.month === vDate.month && 
+                         newDate.day === vDate.day &&
+                         newDate.year === vDate.year;
+        const sameLocation = locationLower && vLocationLower && 
+                             (locationLower.includes(vLocationLower.split(',')[0]) || 
+                              vLocationLower.includes(locationLower.split(',')[0]));
+        
+        // If same date and location, it's the same incident regardless of name
+        if (sameDate && sameLocation) {
+          return true;
+        }
+        
+        // Direct name match (if not unidentified)
+        if (!nameLower.includes('unidentified') && !nameLower.includes('unknown')) {
+          return vNameLower === nameLower || 
+                 vNameLower.includes(nameLower) || 
+                 nameLower.includes(vNameLower);
+        }
+        
+        return false;
+      });
+      
+      if (!exists) {
+        currentData.iceVictims = [...(currentData.iceVictims || []), {
+          id: ni.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+          name: ni.name,
+          date: ni.date || 'Unknown',
+          location: ni.location || 'Unknown',
+          details: ni.details || '',
+          agency: ni.agency || 'ICE/CBP',
+          citizenship: 'Unknown - needs verification',
+          sources: ['News reports - needs verification'],
+          officialResponse: 'Pending',
+          witnessAccount: 'Pending',
+        }];
+        madeChanges = true;
+      }
+    }
+    
+    // Broken promise evidence
+    if (result.updates.brokenPromiseEvidence?.promiseId) {
+      const bp = result.updates.brokenPromiseEvidence;
+      const promise = currentData.brokenPromises?.find(p => p.id === bp.promiseId);
+      if (promise && bp.newFact && !promise.reality.includes(bp.newFact)) {
+        promise.reality.push(bp.newFact);
+        madeChanges = true;
+      }
+    }
+    
+    // Golf trips - validate it's reasonable (between current and 200)
+    if (result.updates.newGolfTrips && typeof result.updates.newGolfTrips === 'number') {
+      const current = (currentData.golf?.marALagoTrips || 0);
+      const newTrips = parseInt(result.updates.newGolfTrips);
+      if (newTrips > current && newTrips <= 200) {  // Must be more than current but less than 200
+        currentData.golf = currentData.golf || {};
+        currentData.golf.marALagoTrips = newTrips;
+        madeChanges = true;
+      }
+    }
+    
+    // Wealth update - validate it's a reasonable number (between 0.5 and 500 billion)
+    if (result.updates.wealthUpdate?.amount) {
+      const amount = parseFloat(result.updates.wealthUpdate.amount);
+      if (amount >= 0.5 && amount <= 500) {  // Must be between $500M and $500B
+        currentData.wealth = currentData.wealth || {};
+        currentData.wealth.current = amount;
+        currentData.wealth.source = result.updates.wealthUpdate.source || 'Forbes';
+        madeChanges = true;
+      }
+    }
+    
+    if (madeChanges) {
+      currentData.lastUpdated = new Date().toISOString();
+      currentData.lastUpdateReason = result.reasoning;
+      currentData.lastUpdateSource = result.headlineSource;
+      await updateData(currentData);
+      
+      return {
+        updated: true,
+        changes: result.updates,
+        reasoning: result.reasoning,
+        newsChecked: news.length,
+      };
+    }
+  }
+  
+  return {
+    updated: false,
+    reasoning: result.reasoning || 'No actionable updates',
+    newsChecked: news.length,
+  };
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  
+  const apiKey = req.headers['x-api-key'];
+  if (CRON_SECRET && apiKey !== CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  if (!GEMINI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(500).json({ error: 'Missing env vars' });
+  }
+  
+  try {
+    const result = await analyzeAndUpdate();
+    return res.status(200).json({ success: true, timestamp: new Date().toISOString(), ...result });
+  } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
