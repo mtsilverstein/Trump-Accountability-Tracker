@@ -84,7 +84,7 @@ function App() {
     { id: 'constitution', label: 'Constitution', icon: '📜' },
     { id: 'money', label: 'Money', icon: '💰' },
     { id: 'ice', label: 'ICE', icon: '⚠️' },
-    { id: 'sources', label: 'Sources', icon: '📑' },
+    { id: 'action', label: 'Act Now', icon: '📞' },
   ];
 
   const Card = ({ children, style, glow }) => (
@@ -231,28 +231,28 @@ function App() {
             </Card>
           </div>
 
-          {/* The Contrast - clean visual design with arrows */}
+          {/* The Contrast - stock chart style */}
           <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
             <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '24px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '12px', alignItems: 'center' }}>
               <div style={{ textAlign: 'center', padding: '20px 16px', background: 'rgba(34,197,94,0.06)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.15)' }}>
                 <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>Trump's Gain</div>
-                <div style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '12px' }}>
-                  <div style={{ width: '50%', height: '4px', background: 'linear-gradient(90deg, #22c55e 0%, #22c55e 100%)', borderRadius: '2px 0 0 2px' }} />
-                  <div style={{ width: 0, height: 0, borderLeft: '8px solid #22c55e', borderTop: '6px solid transparent', borderBottom: '6px solid transparent' }} />
-                </div>
-                <div style={{ fontSize: '10px', color: '#22c55e', marginTop: '8px' }}>▲ UP</div>
+                <div style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '700', color: '#22c55e', borderBottom: '2px solid #22c55e', paddingBottom: '8px', display: 'inline-block' }}>+${wealthGain.toFixed(1)}B</div>
+                <svg width="100%" height="30" viewBox="0 0 100 30" style={{ marginTop: '8px' }}>
+                  <path d="M0,25 L20,22 L40,18 L60,12 L80,8 L100,2" stroke="#22c55e" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                  <polygon points="95,0 100,2 95,6" fill="#22c55e"/>
+                </svg>
+                <div style={{ fontSize: '10px', color: '#22c55e', marginTop: '4px' }}>▲ GAINING</div>
               </div>
               <div style={{ fontSize: '14px', color: '#2a2a3a', fontWeight: '600' }}>vs</div>
               <div style={{ textAlign: 'center', padding: '20px 16px', background: 'rgba(239,68,68,0.06)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.15)' }}>
                 <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>Added to Debt</div>
-                <div style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '12px' }}>
-                  <div style={{ width: 0, height: 0, borderRight: '8px solid #ef4444', borderTop: '6px solid transparent', borderBottom: '6px solid transparent' }} />
-                  <div style={{ width: '70%', height: '4px', background: 'linear-gradient(90deg, #ef4444 0%, #ef4444 100%)', borderRadius: '0 2px 2px 0' }} />
-                </div>
-                <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '8px' }}>▼ LOSS</div>
+                <div style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', borderBottom: '2px solid #ef4444', paddingBottom: '8px', display: 'inline-block' }}>+{fmt(debtSinceInauguration)}</div>
+                <svg width="100%" height="30" viewBox="0 0 100 30" style={{ marginTop: '8px' }}>
+                  <path d="M0,5 L20,8 L40,12 L60,18 L80,22 L100,28" stroke="#ef4444" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                  <polygon points="95,30 100,28 95,24" fill="#ef4444"/>
+                </svg>
+                <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px' }}>▼ LOSING</div>
               </div>
             </div>
             <div style={{ marginTop: '20px', padding: '14px 16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', fontSize: '13px', color: '#a8a8b8', textAlign: 'center' }}>
@@ -276,6 +276,27 @@ function App() {
               ))}
             </div>
             <ActionLink onClick={() => handleTabClick('ice')} color="#fca5a5">Full Details →</ActionLink>
+          </Card>
+
+          {/* Constitution Summary */}
+          <Card glow="#a855f7" style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '18px' }}>📜</span>
+              <span style={{ fontSize: '13px', color: '#c4b5fd', fontWeight: '600' }}>Constitutional Concerns</span>
+            </div>
+            <div style={{ display: 'grid', gap: '10px', marginBottom: '16px' }}>
+              {[
+                { title: 'Defying Court Orders', desc: 'Federal judges found administration in contempt', color: '#a855f7' },
+                { title: 'Due Process Violations', desc: 'Deportations without hearings', color: '#f59e0b' },
+                { title: 'First Amendment', desc: 'Force against protesters, threats to press', color: '#3b82f6' },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', borderLeft: `3px solid ${item.color}` }}>
+                  <div style={{ fontSize: '13px', color: '#fff', fontWeight: '600' }}>{item.title}</div>
+                  <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '2px' }}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+            <ActionLink onClick={() => handleTabClick('constitution')} color="#a855f7">View All Concerns →</ActionLink>
           </Card>
 
           {/* Golf Summary */}
@@ -553,59 +574,104 @@ function App() {
               <strong style={{ color: '#a8a8b8' }}>Found an error?</strong> We welcome corrections with sources.
             </div>
           </Card>
+        </>}
 
-          {/* Take Action */}
-          <Card style={{ marginTop: '24px', borderLeft: '3px solid #3b82f6' }}>
-            <h3 style={{ fontSize: '14px', color: '#3b82f6', margin: '0 0 16px 0', fontWeight: '600' }}>📞 Take Action</h3>
-            <p style={{ fontSize: '13px', color: '#6b6b7b', margin: '0 0 16px 0', lineHeight: 1.7 }}>
-              Your representatives work for you. Contact them about issues that matter.
+        {/* TAKE ACTION */}
+        {activeTab === 'action' && <>
+          <PageHeader title="Take Action" subtitle="Your voice matters. Make it heard." />
+          
+          <Card glow="#3b82f6" style={{ marginBottom: '24px', textAlign: 'center', padding: '32px 24px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📞</div>
+            <h3 style={{ fontSize: '20px', color: '#fff', margin: '0 0 12px 0', fontWeight: '700' }}>Contact Your Representatives</h3>
+            <p style={{ fontSize: '14px', color: '#6b6b7b', margin: '0 0 24px 0', lineHeight: 1.7 }}>
+              Your elected officials work for you. They need to hear from constituents. One phone call can make a difference.
             </p>
             
             <a 
               href="https://www.house.gov/representatives/find-your-representative" 
               target="_blank" 
               rel="noopener noreferrer"
-              style={{ display: 'block', padding: '14px 16px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '8px', marginBottom: '10px', textDecoration: 'none' }}
+              style={{ display: 'block', padding: '18px 20px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: '12px', marginBottom: '12px', textDecoration: 'none' }}
             >
-              <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>Find Your Representative</div>
-              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>house.gov — U.S. House of Representatives</div>
+              <div style={{ fontSize: '16px', color: '#3b82f6', fontWeight: '700' }}>Find Your Representative</div>
+              <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '6px' }}>house.gov — U.S. House of Representatives</div>
             </a>
             
             <a 
               href="https://www.senate.gov/senators/senators-contact.htm" 
               target="_blank" 
               rel="noopener noreferrer"
-              style={{ display: 'block', padding: '14px 16px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '8px', marginBottom: '10px', textDecoration: 'none' }}
+              style={{ display: 'block', padding: '18px 20px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: '12px', marginBottom: '12px', textDecoration: 'none' }}
             >
-              <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>Contact Your Senators</div>
-              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>senate.gov — U.S. Senate</div>
+              <div style={{ fontSize: '16px', color: '#3b82f6', fontWeight: '700' }}>Contact Your Senators</div>
+              <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '6px' }}>senate.gov — U.S. Senate</div>
             </a>
             
             <a 
               href="https://www.usa.gov/elected-officials" 
               target="_blank" 
               rel="noopener noreferrer"
-              style={{ display: 'block', padding: '14px 16px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '8px', marginBottom: '10px', textDecoration: 'none' }}
+              style={{ display: 'block', padding: '18px 20px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: '12px', textDecoration: 'none' }}
             >
-              <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>All Elected Officials</div>
-              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>usa.gov — Federal, state, and local contacts</div>
+              <div style={{ fontSize: '16px', color: '#3b82f6', fontWeight: '700' }}>All Elected Officials</div>
+              <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '6px' }}>usa.gov — Federal, state, and local contacts</div>
             </a>
+          </Card>
 
+          <Card style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '14px', color: '#a855f7', margin: '0 0 16px 0', fontWeight: '600' }}>Organizations Fighting for Accountability</h3>
+            
             <a 
               href="https://www.aclu.org/take-action" 
               target="_blank" 
               rel="noopener noreferrer"
-              style={{ display: 'block', padding: '14px 16px', background: 'rgba(147,51,234,0.1)', border: '1px solid rgba(147,51,234,0.3)', borderRadius: '8px', textDecoration: 'none' }}
+              style={{ display: 'block', padding: '14px 16px', background: 'rgba(147,51,234,0.1)', border: '1px solid rgba(147,51,234,0.3)', borderRadius: '8px', marginBottom: '10px', textDecoration: 'none' }}
             >
               <div style={{ fontSize: '13px', color: '#a855f7', fontWeight: '600' }}>ACLU Action Center</div>
-              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>Petitions and campaigns for civil liberties</div>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>Defending civil liberties and constitutional rights</div>
             </a>
+
+            <a 
+              href="https://www.citizensforethics.org/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ display: 'block', padding: '14px 16px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '8px', marginBottom: '10px', textDecoration: 'none' }}
+            >
+              <div style={{ fontSize: '13px', color: '#eab308', fontWeight: '600' }}>CREW (Citizens for Ethics)</div>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>Tracking corruption and conflicts of interest</div>
+            </a>
+
+            <a 
+              href="https://www.commoncause.org/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ display: 'block', padding: '14px 16px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', textDecoration: 'none' }}
+            >
+              <div style={{ fontSize: '13px', color: '#22c55e', fontWeight: '600' }}>Common Cause</div>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>Protecting democracy and voting rights</div>
+            </a>
+          </Card>
+
+          <Card style={{ borderLeft: '3px solid #ef4444' }}>
+            <h3 style={{ fontSize: '14px', color: '#ef4444', margin: '0 0 12px 0', fontWeight: '600' }}>Tips for Effective Calls</h3>
+            <ul style={{ fontSize: '13px', color: '#a8a8b8', margin: 0, paddingLeft: '20px', lineHeight: 1.8 }}>
+              <li>Be polite but firm — staffers track constituent sentiment</li>
+              <li>State your name and that you're a constituent</li>
+              <li>Focus on one specific issue per call</li>
+              <li>Ask for the representative's position on the issue</li>
+              <li>Calls are more impactful than emails</li>
+            </ul>
           </Card>
         </>}
       </main>
 
       <footer style={{ borderTop: '1px solid #1a1a22', padding: '32px 20px', textAlign: 'center' }}>
-        <div style={{ fontSize: '12px', color: '#4a4a5a' }}>Built for transparency • Auto-updates every 30 min</div>
+        <div style={{ fontSize: '12px', color: '#4a4a5a', marginBottom: '12px' }}>Built for transparency • Auto-updates every 30 min</div>
+        <button
+          type="button"
+          onClick={() => handleTabClick('sources')}
+          style={{ background: 'none', border: 'none', color: '#6b6b7b', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
+        >View Sources & Methodology</button>
       </footer>
 
       <style>{`
