@@ -111,22 +111,22 @@ function App() {
       type="button"
       onClick={onClick}
       style={{
-        flex: '1',
-        minWidth: '60px',
-        padding: '12px 8px',
+        flex: '1 1 0',
+        minWidth: '0',
+        padding: '12px 4px',
         background: 'transparent',
         border: 'none',
         borderBottom: active ? '2px solid #ef4444' : '2px solid transparent',
         color: active ? '#fff' : '#6b6b7b',
         cursor: 'pointer',
-        fontSize: '10px',
+        fontSize: '9px',
         fontWeight: '600',
         textAlign: 'center',
         fontFamily: 'inherit',
         touchAction: 'manipulation',
       }}
     >
-      <div style={{ fontSize: '18px', marginBottom: '4px' }}>{icon}</div>
+      <div style={{ fontSize: '16px', marginBottom: '4px' }}>{icon}</div>
       {label}
     </button>
   );
@@ -179,7 +179,7 @@ function App() {
 
       {/* Nav */}
       <nav style={{ background: '#0a0a0f', position: 'sticky', top: 0, zIndex: 1000, borderBottom: '1px solid #1a1a22' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', justifyContent: 'space-around', padding: '0' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', padding: '0 4px' }}>
           {tabs.map(t => (
             <NavButton key={t.id} active={activeTab === t.id} onClick={() => handleTabClick(t.id)} icon={t.icon} label={t.label} />
           ))}
