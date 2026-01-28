@@ -231,28 +231,66 @@ function App() {
             </Card>
           </div>
 
-          {/* The Contrast - stock chart style */}
+          {/* The Contrast - animated stock charts */}
           <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
             <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '24px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '12px', alignItems: 'center' }}>
-              <div style={{ textAlign: 'center', padding: '20px 16px', background: 'rgba(34,197,94,0.06)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.15)' }}>
-                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>Trump's Gain</div>
-                <div style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '700', color: '#22c55e', borderBottom: '2px solid #22c55e', paddingBottom: '8px', display: 'inline-block' }}>+${wealthGain.toFixed(1)}B</div>
-                <svg width="100%" height="30" viewBox="0 0 100 30" style={{ marginTop: '8px' }}>
-                  <path d="M0,25 L20,22 L40,18 L60,12 L80,8 L100,2" stroke="#22c55e" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                  <polygon points="95,0 100,2 95,6" fill="#22c55e"/>
+              {/* Trump's Gain - Green Up Chart */}
+              <div style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(34,197,94,0.06)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.15)' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>Trump's Gain</div>
+                <div style={{ fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
+                <svg width="100%" height="50" viewBox="0 0 120 50" style={{ marginTop: '12px' }}>
+                  <defs>
+                    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3"/>
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,45 Q15,42 25,38 T50,30 T75,18 T100,12 L100,12" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round">
+                    <animate attributeName="stroke-dasharray" from="0,200" to="200,0" dur="1.5s" fill="freeze"/>
+                  </path>
+                  <path d="M0,45 Q15,42 25,38 T50,30 T75,18 T100,12 L100,50 L0,50 Z" fill="url(#greenGrad)" opacity="0">
+                    <animate attributeName="opacity" from="0" to="1" dur="1.5s" fill="freeze"/>
+                  </path>
+                  <polygon points="100,12 108,16 100,20" fill="#22c55e">
+                    <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.2s" fill="freeze"/>
+                  </polygon>
+                  <circle cx="100" cy="12" r="4" fill="#22c55e">
+                    <animate attributeName="r" values="4;6;4" dur="1s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite"/>
+                  </circle>
                 </svg>
-                <div style={{ fontSize: '10px', color: '#22c55e', marginTop: '4px' }}>▲ GAINING</div>
+                <div style={{ fontSize: '10px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>📈 GAINING</div>
               </div>
-              <div style={{ fontSize: '14px', color: '#2a2a3a', fontWeight: '600' }}>vs</div>
-              <div style={{ textAlign: 'center', padding: '20px 16px', background: 'rgba(239,68,68,0.06)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.15)' }}>
-                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>Added to Debt</div>
-                <div style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', borderBottom: '2px solid #ef4444', paddingBottom: '8px', display: 'inline-block' }}>+{fmt(debtSinceInauguration)}</div>
-                <svg width="100%" height="30" viewBox="0 0 100 30" style={{ marginTop: '8px' }}>
-                  <path d="M0,5 L20,8 L40,12 L60,18 L80,22 L100,28" stroke="#ef4444" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                  <polygon points="95,30 100,28 95,24" fill="#ef4444"/>
+              
+              <div style={{ fontSize: '14px', color: '#3a3a4a', fontWeight: '600' }}>vs</div>
+              
+              {/* Debt - Red Down Chart */}
+              <div style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(239,68,68,0.06)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.15)' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>Added to Debt</div>
+                <div style={{ fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
+                <svg width="100%" height="50" viewBox="0 0 120 50" style={{ marginTop: '12px' }}>
+                  <defs>
+                    <linearGradient id="redGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#ef4444" stopOpacity="0"/>
+                      <stop offset="100%" stopColor="#ef4444" stopOpacity="0.3"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,8 Q15,12 25,18 T50,25 T75,35 T100,42 L100,42" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round">
+                    <animate attributeName="stroke-dasharray" from="0,200" to="200,0" dur="1.5s" fill="freeze"/>
+                  </path>
+                  <path d="M0,8 Q15,12 25,18 T50,25 T75,35 T100,42 L100,50 L0,50 Z" fill="url(#redGrad)" opacity="0">
+                    <animate attributeName="opacity" from="0" to="1" dur="1.5s" fill="freeze"/>
+                  </path>
+                  <polygon points="100,42 108,38 100,34" fill="#ef4444">
+                    <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.2s" fill="freeze"/>
+                  </polygon>
+                  <circle cx="100" cy="42" r="4" fill="#ef4444">
+                    <animate attributeName="r" values="4;6;4" dur="1s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite"/>
+                  </circle>
                 </svg>
-                <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px' }}>▼ LOSING</div>
+                <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px', fontWeight: '600' }}>📉 LOSING</div>
               </div>
             </div>
             <div style={{ marginTop: '20px', padding: '14px 16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', fontSize: '13px', color: '#a8a8b8', textAlign: 'center' }}>
