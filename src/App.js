@@ -231,69 +231,55 @@ function App() {
             </Card>
           </div>
 
-          {/* The Contrast - animated stock charts */}
+          {/* The Contrast - clean stock charts */}
           <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
-            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '24px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '12px', alignItems: 'center' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '20px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '10px', alignItems: 'center' }}>
+              
               {/* Trump's Gain - Green Up Chart */}
-              <div style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(34,197,94,0.06)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.15)' }}>
-                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>Trump's Gain</div>
-                <div style={{ fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
-                <svg width="100%" height="50" viewBox="0 0 120 50" style={{ marginTop: '12px' }}>
+              <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(34,197,94,0.04)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.12)' }}>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Trump's Gain</div>
+                <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', fontWeight: '700', color: '#22c55e', marginBottom: '12px' }}>+${wealthGain.toFixed(1)}B</div>
+                <svg width="100%" height="40" viewBox="0 0 100 40" preserveAspectRatio="none" style={{ display: 'block' }}>
                   <defs>
-                    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3"/>
-                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0"/>
+                    <linearGradient id="greenFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.25"/>
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02"/>
                     </linearGradient>
                   </defs>
-                  <path d="M0,45 Q15,42 25,38 T50,30 T75,18 T100,12 L100,12" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round">
-                    <animate attributeName="stroke-dasharray" from="0,200" to="200,0" dur="1.5s" fill="freeze"/>
-                  </path>
-                  <path d="M0,45 Q15,42 25,38 T50,30 T75,18 T100,12 L100,50 L0,50 Z" fill="url(#greenGrad)" opacity="0">
-                    <animate attributeName="opacity" from="0" to="1" dur="1.5s" fill="freeze"/>
-                  </path>
-                  <polygon points="100,12 108,16 100,20" fill="#22c55e">
-                    <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.2s" fill="freeze"/>
-                  </polygon>
-                  <circle cx="100" cy="12" r="4" fill="#22c55e">
-                    <animate attributeName="r" values="4;6;4" dur="1s" repeatCount="indefinite"/>
-                    <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite"/>
-                  </circle>
+                  <path d="M0,35 C10,33 20,30 30,26 C40,22 50,18 60,14 C70,11 80,8 90,6 L100,4 L100,40 L0,40 Z" fill="url(#greenFill)"/>
+                  <path d="M0,35 C10,33 20,30 30,26 C40,22 50,18 60,14 C70,11 80,8 90,6 L100,4" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                <div style={{ fontSize: '10px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>📈 GAINING</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}>
+                  <span style={{ color: '#22c55e', fontSize: '14px' }}>▲</span>
+                  <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: '600' }}>UP</span>
+                </div>
               </div>
               
-              <div style={{ fontSize: '14px', color: '#3a3a4a', fontWeight: '600' }}>vs</div>
+              <div style={{ fontSize: '12px', color: '#3a3a4a', fontWeight: '600' }}>vs</div>
               
               {/* Debt - Red Down Chart */}
-              <div style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(239,68,68,0.06)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.15)' }}>
-                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>Added to Debt</div>
-                <div style={{ fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
-                <svg width="100%" height="50" viewBox="0 0 120 50" style={{ marginTop: '12px' }}>
+              <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(239,68,68,0.04)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.12)' }}>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Added to Debt</div>
+                <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', marginBottom: '12px' }}>+{fmt(debtSinceInauguration)}</div>
+                <svg width="100%" height="40" viewBox="0 0 100 40" preserveAspectRatio="none" style={{ display: 'block' }}>
                   <defs>
-                    <linearGradient id="redGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#ef4444" stopOpacity="0"/>
-                      <stop offset="100%" stopColor="#ef4444" stopOpacity="0.3"/>
+                    <linearGradient id="redFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#ef4444" stopOpacity="0.02"/>
+                      <stop offset="100%" stopColor="#ef4444" stopOpacity="0.25"/>
                     </linearGradient>
                   </defs>
-                  <path d="M0,8 Q15,12 25,18 T50,25 T75,35 T100,42 L100,42" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round">
-                    <animate attributeName="stroke-dasharray" from="0,200" to="200,0" dur="1.5s" fill="freeze"/>
-                  </path>
-                  <path d="M0,8 Q15,12 25,18 T50,25 T75,35 T100,42 L100,50 L0,50 Z" fill="url(#redGrad)" opacity="0">
-                    <animate attributeName="opacity" from="0" to="1" dur="1.5s" fill="freeze"/>
-                  </path>
-                  <polygon points="100,42 108,38 100,34" fill="#ef4444">
-                    <animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.2s" fill="freeze"/>
-                  </polygon>
-                  <circle cx="100" cy="42" r="4" fill="#ef4444">
-                    <animate attributeName="r" values="4;6;4" dur="1s" repeatCount="indefinite"/>
-                    <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite"/>
-                  </circle>
+                  <path d="M0,6 C10,8 20,12 30,16 C40,20 50,24 60,28 C70,31 80,34 90,36 L100,38 L100,40 L0,40 Z" fill="url(#redFill)"/>
+                  <path d="M0,6 C10,8 20,12 30,16 C40,20 50,24 60,28 C70,31 80,34 90,36 L100,38" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px', fontWeight: '600' }}>📉 LOSING</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}>
+                  <span style={{ color: '#ef4444', fontSize: '14px' }}>▼</span>
+                  <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '600' }}>DOWN</span>
+                </div>
               </div>
             </div>
-            <div style={{ marginTop: '20px', padding: '14px 16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', fontSize: '13px', color: '#a8a8b8', textAlign: 'center' }}>
+            
+            <div style={{ marginTop: '16px', padding: '12px 14px', background: 'rgba(239,68,68,0.05)', borderRadius: '8px', fontSize: '12px', color: '#888', textAlign: 'center' }}>
               For every <span style={{ color: '#22c55e', fontWeight: '600' }}>$1</span> Trump gained, debt increased by <span style={{ color: '#ef4444', fontWeight: '700' }}>${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}</span>
             </div>
           </Card>
