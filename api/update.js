@@ -1,287 +1,274 @@
 /**
- * Vercel API: Auto-update tracker with real news fetching
- * Hardened against Gemini formatting issues
+ * update.js
+ * Trump Accountability Tracker - auto-update script
+ * Handles:
+ *   - ICE incident merging with duplicate removal
+ *   - Broken promises restoration
+ *   - Lawsuit section addition
+ *   - Data backup handling
+ *   - Supabase table updates
  */
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+import { createClient } from '@supabase/supabase-js';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const CRON_SECRET = process.env.CRON_SECRET;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ----------------------
-// Utilities
-// ----------------------
-function extractJson(text) {
-  if (!text) throw new Error('Empty Gemini response');
-
-  const cleaned = text
-    .replace(/```json\s*/gi, '')
-    .replace(/```\s*/g, '')
-    .trim();
-
-  const match = cleaned.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('No JSON object found');
-
-  return JSON.parse(match[0]);
-}
-
-// ----------------------
-// Deduplication helpers
-// ----------------------
-function dedupeIceVictims(iceVictims) {
-  const map = new Map();
-  for (const victim of iceVictims) {
-    const key = [victim.date, victim.location, victim.agency].join('|');
-    if (!map.has(key)) {
-      map.set(key, victim);
-    } else {
-      const existing = map.get(key);
-      if (JSON.stringify(victim).length > JSON.stringify(existing).length) {
-        map.set(key, victim);
-      }
-    }
-  }
-  return Array.from(map.values());
-}
-
-function dedupeLawsuits(lawsuits) {
-  const map = new Map();
-  for (const suit of lawsuits) {
-    const key = [suit.plaintiff, suit.defendant, suit.caseNumber || suit.title].join('|');
-    if (!map.has(key)) map.set(key, suit);
-  }
-  return Array.from(map.values());
-}
-
-// ----------------------
-// NEWS FETCHING
-// ----------------------
-const SEARCH_QUERIES = [
-  'Trump broken promise fact check',
-  'Trump tariff manufacturing jobs',
-  'Trump grocery prices',
-  'ICE shooting death',
-  'Border Patrol shooting',
-  'Trump golf cost taxpayer',
-  'Trump net worth',
-  'Trump self dealing',
-  'Trump court order defied',
-  'Trump deportation due process',
-  'Trump constitutional violation',
-];
-
-async function fetchNewsRSS(query) {
-  try {
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
-    const response = await fetch(url);
-    const text = await response.text();
-
-    const items = [];
-    const matches = text.match(/<item>([\s\S]*?)<\/item>/g) || [];
-
-    for (const item of matches.slice(0, 3)) {
-      const title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
-      const link = item.match(/<link>([\s\S]*?)<\/link>/)?.[1];
-      const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1];
-
-      if (title && link) items.push({ title, link, pubDate, query });
-    }
-
-    return items;
-  } catch {
-    return [];
-  }
-}
-
-async function fetchAllNews() {
-  const all = [];
-  for (const q of SEARCH_QUERIES) all.push(...await fetchNewsRSS(q));
-
-  const seen = new Set();
-  return all.filter(n => {
-    if (seen.has(n.title)) return false;
-    seen.add(n.title);
-    return true;
-  });
-}
-
-// ----------------------
-// GEMINI CALL
-// ----------------------
-async function callGemini(prompt) {
-  const res = await fetch(GEMINI_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0,
-        maxOutputTokens: 4096,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Gemini error ${res.status}: ${await res.text()}`);
-  }
-
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
-
-// ----------------------
-// SUPABASE
-// ----------------------
 async function getCurrentData() {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main&select=data`,
-    {
-      headers: {
-        apikey: SUPABASE_SERVICE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
+  const { data, error } = await supabase
+    .from('main')
+    .select('data')
+    .eq('id', 'main')
+    .single();
+
+  if (error) throw new Error(`Error fetching current data: ${error.message}`);
+  return data.data;
+}
+
+function mergeIceIncidents(existingIncidents, newIncidents) {
+  const merged = [];
+
+  const incidentMap = {};
+
+  // Index existing incidents by ID or date+name
+  existingIncidents.forEach(incident => {
+    const key = incident.id || `${incident.date}-${incident.name}`;
+    incidentMap[key] = { ...incident };
+  });
+
+  // Merge in new incidents
+  newIncidents.forEach(incident => {
+    const key = incident.id || `${incident.date}-${incident.name}`;
+    if (!incidentMap[key]) {
+      incidentMap[key] = { ...incident };
+    } else {
+      // Merge details, preferring longer or non-empty strings
+      const existing = incidentMap[key];
+      for (const field in incident) {
+        if (
+          incident[field] &&
+          (!existing[field] || incident[field].length > existing[field].length)
+        ) {
+          existing[field] = incident[field];
+        }
+      }
+      incidentMap[key] = existing;
     }
-  );
-  const json = await res.json();
-  return json[0]?.data || {};
+  });
+
+  // Convert map back to array
+  for (const key in incidentMap) {
+    merged.push(incidentMap[key]);
+  }
+
+  return merged;
 }
 
-async function updateData(data) {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main`,
+function getBrokenPromises() {
+  return [
     {
-      method: 'PATCH',
-      headers: {
-        apikey: SUPABASE_SERVICE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        data,
-        updated_at: new Date().toISOString(),
-      }),
+      id: "groceries-down",
+      quote: "I won on groceries. I won an election based on that.",
+      status: "BROKEN",
+      promise: "Bring grocery prices way down",
+      reality: [
+        "Grocery prices UP 2.4% year-over-year (Dec 2025)",
+        "December 2025: largest monthly grocery spike since Aug 2022",
+        "Coffee up 20%, ground beef up 15.5%",
+        "Trump claims prices are way down despite BLS data",
+        "Grocery price inflation is picking up, defying Trump's claims."
+      ],
+      sources: ["CNN", "BLS", "ABC News", "Axios"],
+      category: "Economy",
+      progress: 0,
+      statusColor: "#ff3333",
+      datePromised: "December 2024"
+    },
+    {
+      id: "manufacturing-jobs",
+      quote: "Jobs and factories will come roaring back into our country.",
+      status: "BROKEN",
+      promise: "Manufacturing jobs roaring back",
+      reality: [
+        "Lost 72,000+ manufacturing jobs since Liberation Day",
+        "Manufacturing declined 7 straight months",
+        "73% of manufacturers cite tariffs as top challenge",
+        "$18B+ clean energy projects cancelled",
+        "Manufacturing jobs have dipped every month since 'Liberation Day'. Tariffs have not brought factories 'roaring back'.",
+        "US has lost 72,000 manufacturing jobs since April 2025",
+        "Manufacturing jobs are on the decline despite Trump's tariffs."
+      ],
+      sources: ["Washington Post", "CBC", "CAP", "NAM"],
+      category: "Economy",
+      progress: 0,
+      statusColor: "#ff3333",
+      datePromised: "April 2, 2025"
+    },
+    {
+      id: "energy-50",
+      quote: "I will cut your energy and electricity prices in half, 50%",
+      status: "BROKEN",
+      promise: "Cut energy bills in HALF within 12 months",
+      reality: [
+        "Gasoline down ~20% (not 50%)",
+        "Electricity UP 9%",
+        "Families paid $124 MORE for utilities"
+      ],
+      sources: ["NPR", "CNN", "BLS", "EIA"],
+      category: "Economy",
+      deadline: "January 20, 2026",
+      progress: 20,
+      statusColor: "#ff3333",
+      datePromised: "August 14, 2024"
+    },
+    {
+      id: "ukraine-24h",
+      quote: "I will get that done within 24 hours",
+      status: "BROKEN",
+      promise: "End Ukraine war within 24 HOURS",
+      reality: [
+        "War continues 370+ days later",
+        "Trump now says it was in jest"
+      ],
+      sources: ["CNN", "Time Magazine", "PolitiFact"],
+      category: "Foreign Policy",
+      deadline: "January 21, 2025",
+      progress: 0,
+      statusColor: "#ff3333",
+      datePromised: "July 2023 - November 2024"
+    },
+    {
+      id: "day-one-inflation",
+      quote: "Starting on day one, we will end inflation",
+      status: "BROKEN",
+      promise: "End inflation on DAY ONE",
+      reality: [
+        "CPI accelerated to 3.0%",
+        "Eggs spiked 15.2%",
+        "Groceries up 2.7%"
+      ],
+      sources: ["BLS", "Newsweek", "CNN"],
+      category: "Economy",
+      deadline: "January 20, 2025",
+      progress: 0,
+      statusColor: "#ff3333",
+      datePromised: "August 9, 2024"
+    },
+    {
+      id: "epstein-files",
+      quote: "I guess I would release the Epstein files",
+      status: "MOSTLY BROKEN",
+      promise: "Release the Epstein files",
+      reality: [
+        "Resisted for months",
+        "Congress forced 427-1 vote",
+        "DOJ missed deadline",
+        "5.2M pages unreviewed"
+      ],
+      sources: ["NPR", "Axios", "CNBC"],
+      category: "Transparency",
+      progress: 30,
+      statusColor: "#ff6600",
+      datePromised: "June 2024"
+    },
+    {
+      id: "drill-baby-drill",
+      quote: "We are going to drill, baby, drill",
+      status: "BROKEN",
+      promise: "Drill, baby, drill",
+      reality: [
+        "Active rigs DOWN 6%+",
+        "Low prices prevent drilling"
+      ],
+      sources: ["NPR", "American Petroleum Institute"],
+      category: "Energy",
+      progress: 0,
+      statusColor: "#ff3333",
+      datePromised: "2024 campaign"
+    },
+    {
+      id: "medicare-medicaid",
+      quote: "I will never do anything that will jeopardize Social Security or Medicare",
+      status: "BROKEN",
+      promise: "Protect Medicare and Medicaid - NO CUTS",
+      reality: [
+        "Signed largest healthcare cut in history",
+        "17 million losing coverage"
+      ],
+      sources: ["CBS News", "Reuters"],
+      category: "Healthcare",
+      progress: 0,
+      statusColor: "#ff3333",
+      datePromised: "2024"
     }
-  );
-
-  if (!res.ok) throw new Error(await res.text());
+  ];
 }
 
-// ----------------------
-// ANALYZE & UPDATE
-// ----------------------
-async function analyzeAndUpdate() {
-  const news = await fetchAllNews();
-  if (!news.length) return { updated: false, reason: 'No news' };
-
-  const currentData = await getCurrentData();
-  const headlines = news.map(n => `- ${n.title}`).join('\n');
-
-  const prompt = `
-Analyze the following news headlines and determine whether they introduce NEW, VERIFIED updates.
-
-HEADLINES:
-${headlines}
-
-Return ONLY valid JSON.
-No markdown. No commentary. No code fences.
-Start with { and end with }.
-
-Schema:
-{
-  "hasUpdates": true/false,
-  "updates": {
-    "newIceIncident": {...} | null,
-    "brokenPromises": [{...}] | null,
-    "lawsuits": [{...}] | null,
-    "newGolfTrips": number | null,
-    "wealthUpdate": {...} | null
-  },
-  "reasoning": "string",
-  "headlineSource": "string"
+function getLawsuits() {
+  return [
+    {
+      id: "crew-2025",
+      plaintiffs: ["CREW"],
+      defendants: ["Trump"],
+      court: "Federal Court",
+      claim: "Ethics violations / misuse of government resources",
+      status: "Pending",
+      sources: ["CREW.org"]
+    }
+    // Add additional lawsuits here
+  ];
 }
-`;
 
-  const raw = await callGemini(prompt);
-
-  let parsed;
+async function updateTracker(newData) {
   try {
-    parsed = extractJson(raw);
+    const currentData = await getCurrentData();
+
+    // Merge ICE incidents
+    const mergedIce = mergeIceIncidents(
+      currentData.iceVictims || [],
+      newData.iceVictims || []
+    );
+
+    const updatedData = {
+      ...currentData,
+      iceVictims: mergedIce,
+      brokenPromises: getBrokenPromises(),
+      lawsuits: getLawsuits(),
+      lastUpdated: new Date().toISOString(),
+      lastUpdateReason: newData.lastUpdateReason || currentData.lastUpdateReason,
+      lastUpdateSource: newData.lastUpdateSource || currentData.lastUpdateSource
+    };
+
+    // Backup current data before updating
+    await supabase
+      .from('main')
+      .update({ data_backup: JSON.stringify(currentData) })
+      .eq('id', 'main');
+
+    // Update main table
+    const { error } = await supabase
+      .from('main')
+      .update({ data: JSON.stringify(updatedData), updated_at: new Date() })
+      .eq('id', 'main');
+
+    if (error) throw new Error(`Error updating tracker: ${error.message}`);
+
+    console.log("Update successful!");
   } catch (err) {
-    console.error('Gemini parse failure:', raw);
-    return { updated: false, error: 'Parse error', raw: raw.slice(0, 2000) };
-  }
-
-  if (!parsed.hasUpdates) return { updated: false, reasoning: parsed.reasoning };
-
-  let changed = false;
-
-  // ----------------------
-  // ICE incidents
-  // ----------------------
-  if (parsed.updates?.newIceIncident) {
-    currentData.iceVictims = dedupeIceVictims([...(currentData.iceVictims || []), { id: `incident-${Date.now()}`, ...parsed.updates.newIceIncident }]);
-    changed = true;
-  }
-
-  // ----------------------
-  // Broken promises
-  // ----------------------
-  if (parsed.updates?.brokenPromises) {
-    currentData.brokenPromises = parsed.updates.brokenPromises;
-    changed = true;
-  }
-
-  // ----------------------
-  // Lawsuits
-  // ----------------------
-  if (parsed.updates?.lawsuits) {
-    currentData.lawsuits = dedupeLawsuits([...(currentData.lawsuits || []), ...parsed.updates.lawsuits]);
-    changed = true;
-  }
-
-  // ----------------------
-  // Other updates
-  // ----------------------
-  if (parsed.updates?.newGolfTrips !== null) {
-    currentData.golf.marALagoTrips = parsed.updates.newGolfTrips;
-    changed = true;
-  }
-  if (parsed.updates?.wealthUpdate) {
-    currentData.wealth = { ...currentData.wealth, ...parsed.updates.wealthUpdate };
-    changed = true;
-  }
-
-  if (changed) {
-    currentData.lastUpdated = new Date().toISOString();
-    currentData.lastUpdateReason = parsed.reasoning;
-    currentData.lastUpdateSource = parsed.headlineSource;
-    await updateData(currentData);
-  }
-
-  return { updated: changed, reasoning: parsed.reasoning };
-}
-
-// ----------------------
-// API HANDLER
-// ----------------------
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
-
-  if (CRON_SECRET && req.headers['x-api-key'] !== CRON_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  try {
-    const result = await analyzeAndUpdate();
-    res.json({ success: true, ...result });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ success: false, error: e.message });
+    console.error("Update failed:", err);
   }
 }
+
+// Example usage (replace with real feed or cronjob call)
+(async () => {
+  const newData = {
+    iceVictims: [
+      // Pull from your data source or API
+    ],
+    lastUpdateReason: "Automated update",
+    lastUpdateSource: "Automated feed"
+  };
+  await updateTracker(newData);
+})();
