@@ -1,6 +1,5 @@
 /**
- * Vercel API: Auto-update tracker with real news fetching
- * Hardened against Gemini formatting issues
+ * Vercel API: Auto-update tracker with backup + fail-safe rollback
  */
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -16,13 +15,11 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemi
 function extractJson(text) {
   if (!text) throw new Error('Empty Gemini response');
 
-  // Strip markdown fences
   const cleaned = text
     .replace(/```json\s*/gi, '')
     .replace(/```\s*/g, '')
     .trim();
 
-  // Extract first JSON object defensively
   const match = cleaned.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('No JSON object found');
 
@@ -37,13 +34,23 @@ function dedupeIceVictims(iceVictims) {
 
   for (const victim of iceVictims) {
     const key = [victim.date, victim.location, victim.agency].join('|');
+    const existing = map.get(key);
 
-    if (!map.has(key)) {
+    if (!existing) {
       map.set(key, victim);
+      continue;
+    }
+
+    const existingHasName = !!(existing.name || existing.victim);
+    const victimHasName = !!(victim.name || victim.victim);
+
+    if (victimHasName && !existingHasName) {
+      map.set(key, { ...victim, id: existing.id });
+    } else if (!victimHasName && existingHasName) {
+      continue;
     } else {
-      const existing = map.get(key);
       if (JSON.stringify(victim).length > JSON.stringify(existing).length) {
-        map.set(key, victim);
+        map.set(key, { ...victim, id: existing.id });
       }
     }
   }
@@ -133,7 +140,7 @@ async function callGemini(prompt) {
 // ----------------------
 async function getCurrentData() {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main&select=data`,
+    `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main&select=data,data_backup`,
     {
       headers: {
         apikey: SUPABASE_SERVICE_KEY,
@@ -142,10 +149,10 @@ async function getCurrentData() {
     }
   );
   const json = await res.json();
-  return json[0]?.data || {};
+  return json[0] || { data: {}, data_backup: {} };
 }
 
-async function updateData(data) {
+async function updateData(data, backup) {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main`,
     {
@@ -157,6 +164,7 @@ async function updateData(data) {
       },
       body: JSON.stringify({
         data,
+        data_backup: backup,
         updated_at: new Date().toISOString(),
       }),
     }
@@ -172,7 +180,10 @@ async function analyzeAndUpdate() {
   const news = await fetchAllNews();
   if (!news.length) return { updated: false, reason: 'No news' };
 
-  const currentData = await getCurrentData();
+  const current = await getCurrentData();
+  const currentData = current.data;
+  const currentBackup = current.data_backup || currentData;
+
   const headlines = news.map(n => `- ${n.title}`).join('\n');
 
   const prompt = `
@@ -199,30 +210,34 @@ Schema:
 }
 `;
 
-  const raw = await callGemini(prompt);
-
   let parsed;
+
   try {
+    const raw = await callGemini(prompt);
     parsed = extractJson(raw);
   } catch (err) {
-    console.error('Gemini parse failure:', raw);
-    return { updated: false, error: 'Parse error', raw: raw.slice(0, 2000) };
+    console.error('Gemini parse failure:', err);
+    // FAIL-SAFE: rollback to last backup
+    await updateData(currentBackup, currentBackup);
+    return { updated: false, error: 'Gemini parse failed, rolled back to backup' };
   }
 
-  if (!parsed.hasUpdates) {
-    return { updated: false, reasoning: parsed.reasoning };
-  }
+  if (!parsed.hasUpdates) return { updated: false, reasoning: parsed.reasoning };
 
   let changed = false;
 
   if (parsed.updates?.newIceIncident) {
+    const newVictim = {
+      id: `incident-${Date.now()}`,
+      victim: parsed.updates.newIceIncident.name || parsed.updates.newIceIncident.victim || "Unidentified",
+      ...parsed.updates.newIceIncident,
+    };
+
     currentData.iceVictims = dedupeIceVictims([
       ...(currentData.iceVictims || []),
-      {
-        id: `incident-${Date.now()}`,
-        ...parsed.updates.newIceIncident,
-      },
+      newVictim,
     ]);
+
     changed = true;
   }
 
@@ -230,7 +245,9 @@ Schema:
     currentData.lastUpdated = new Date().toISOString();
     currentData.lastUpdateReason = parsed.reasoning;
     currentData.lastUpdateSource = parsed.headlineSource;
-    await updateData(currentData);
+
+    // Save the previous data as backup before patching
+    await updateData(currentData, currentBackup);
   }
 
   return { updated: changed, reasoning: parsed.reasoning };
