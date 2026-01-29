@@ -1,5 +1,6 @@
 /**
- * Vercel API: Auto-update tracker with backup + fail-safe rollback
+ * Vercel API: Auto-update tracker with real news fetching
+ * Hardened against Gemini formatting issues
  */
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -27,34 +28,30 @@ function extractJson(text) {
 }
 
 // ----------------------
-// Deduplication helper
+// Deduplication helpers
 // ----------------------
 function dedupeIceVictims(iceVictims) {
   const map = new Map();
-
   for (const victim of iceVictims) {
     const key = [victim.date, victim.location, victim.agency].join('|');
-    const existing = map.get(key);
-
-    if (!existing) {
+    if (!map.has(key)) {
       map.set(key, victim);
-      continue;
-    }
-
-    const existingHasName = !!(existing.name || existing.victim);
-    const victimHasName = !!(victim.name || victim.victim);
-
-    if (victimHasName && !existingHasName) {
-      map.set(key, { ...victim, id: existing.id });
-    } else if (!victimHasName && existingHasName) {
-      continue;
     } else {
+      const existing = map.get(key);
       if (JSON.stringify(victim).length > JSON.stringify(existing).length) {
-        map.set(key, { ...victim, id: existing.id });
+        map.set(key, victim);
       }
     }
   }
+  return Array.from(map.values());
+}
 
+function dedupeLawsuits(lawsuits) {
+  const map = new Map();
+  for (const suit of lawsuits) {
+    const key = [suit.plaintiff, suit.defendant, suit.caseNumber || suit.title].join('|');
+    if (!map.has(key)) map.set(key, suit);
+  }
   return Array.from(map.values());
 }
 
@@ -70,7 +67,6 @@ const SEARCH_QUERIES = [
   'Trump golf cost taxpayer',
   'Trump net worth',
   'Trump self dealing',
-  'Trump corruption',
   'Trump court order defied',
   'Trump deportation due process',
   'Trump constitutional violation',
@@ -140,7 +136,7 @@ async function callGemini(prompt) {
 // ----------------------
 async function getCurrentData() {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main&select=data,data_backup`,
+    `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main&select=data`,
     {
       headers: {
         apikey: SUPABASE_SERVICE_KEY,
@@ -149,10 +145,10 @@ async function getCurrentData() {
     }
   );
   const json = await res.json();
-  return json[0] || { data: {}, data_backup: {} };
+  return json[0]?.data || {};
 }
 
-async function updateData(data, backup) {
+async function updateData(data) {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main`,
     {
@@ -164,7 +160,6 @@ async function updateData(data, backup) {
       },
       body: JSON.stringify({
         data,
-        data_backup: backup,
         updated_at: new Date().toISOString(),
       }),
     }
@@ -180,10 +175,7 @@ async function analyzeAndUpdate() {
   const news = await fetchAllNews();
   if (!news.length) return { updated: false, reason: 'No news' };
 
-  const current = await getCurrentData();
-  const currentData = current.data;
-  const currentBackup = current.data_backup || currentData;
-
+  const currentData = await getCurrentData();
   const headlines = news.map(n => `- ${n.title}`).join('\n');
 
   const prompt = `
@@ -201,7 +193,8 @@ Schema:
   "hasUpdates": true/false,
   "updates": {
     "newIceIncident": {...} | null,
-    "brokenPromiseEvidence": {...} | null,
+    "brokenPromises": [{...}] | null,
+    "lawsuits": [{...}] | null,
     "newGolfTrips": number | null,
     "wealthUpdate": {...} | null
   },
@@ -210,34 +203,53 @@ Schema:
 }
 `;
 
-  let parsed;
+  const raw = await callGemini(prompt);
 
+  let parsed;
   try {
-    const raw = await callGemini(prompt);
     parsed = extractJson(raw);
   } catch (err) {
-    console.error('Gemini parse failure:', err);
-    // FAIL-SAFE: rollback to last backup
-    await updateData(currentBackup, currentBackup);
-    return { updated: false, error: 'Gemini parse failed, rolled back to backup' };
+    console.error('Gemini parse failure:', raw);
+    return { updated: false, error: 'Parse error', raw: raw.slice(0, 2000) };
   }
 
   if (!parsed.hasUpdates) return { updated: false, reasoning: parsed.reasoning };
 
   let changed = false;
 
+  // ----------------------
+  // ICE incidents
+  // ----------------------
   if (parsed.updates?.newIceIncident) {
-    const newVictim = {
-      id: `incident-${Date.now()}`,
-      victim: parsed.updates.newIceIncident.name || parsed.updates.newIceIncident.victim || "Unidentified",
-      ...parsed.updates.newIceIncident,
-    };
+    currentData.iceVictims = dedupeIceVictims([...(currentData.iceVictims || []), { id: `incident-${Date.now()}`, ...parsed.updates.newIceIncident }]);
+    changed = true;
+  }
 
-    currentData.iceVictims = dedupeIceVictims([
-      ...(currentData.iceVictims || []),
-      newVictim,
-    ]);
+  // ----------------------
+  // Broken promises
+  // ----------------------
+  if (parsed.updates?.brokenPromises) {
+    currentData.brokenPromises = parsed.updates.brokenPromises;
+    changed = true;
+  }
 
+  // ----------------------
+  // Lawsuits
+  // ----------------------
+  if (parsed.updates?.lawsuits) {
+    currentData.lawsuits = dedupeLawsuits([...(currentData.lawsuits || []), ...parsed.updates.lawsuits]);
+    changed = true;
+  }
+
+  // ----------------------
+  // Other updates
+  // ----------------------
+  if (parsed.updates?.newGolfTrips !== null) {
+    currentData.golf.marALagoTrips = parsed.updates.newGolfTrips;
+    changed = true;
+  }
+  if (parsed.updates?.wealthUpdate) {
+    currentData.wealth = { ...currentData.wealth, ...parsed.updates.wealthUpdate };
     changed = true;
   }
 
@@ -245,9 +257,7 @@ Schema:
     currentData.lastUpdated = new Date().toISOString();
     currentData.lastUpdateReason = parsed.reasoning;
     currentData.lastUpdateSource = parsed.headlineSource;
-
-    // Save the previous data as backup before patching
-    await updateData(currentData, currentBackup);
+    await updateData(currentData);
   }
 
   return { updated: changed, reasoning: parsed.reasoning };
