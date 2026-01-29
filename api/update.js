@@ -1,9 +1,6 @@
 /**
  * Vercel API: Auto-update tracker with real news fetching
- * 
- * 1. Fetches recent news from Google News RSS (free)
- * 2. Sends headlines to Gemini for analysis
- * 3. Updates Supabase if new data found
+ * Hardened against Gemini formatting issues
  */
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -13,7 +10,50 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
 
-// News search queries
+// ----------------------
+// Utilities
+// ----------------------
+function extractJson(text) {
+  if (!text) throw new Error('Empty Gemini response');
+
+  // Strip markdown fences
+  const cleaned = text
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  // Extract first JSON object defensively
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('No JSON object found');
+
+  return JSON.parse(match[0]);
+}
+
+// ----------------------
+// Deduplication helper
+// ----------------------
+function dedupeIceVictims(iceVictims) {
+  const map = new Map();
+
+  for (const victim of iceVictims) {
+    const key = [victim.date, victim.location, victim.agency].join('|');
+
+    if (!map.has(key)) {
+      map.set(key, victim);
+    } else {
+      const existing = map.get(key);
+      if (JSON.stringify(victim).length > JSON.stringify(existing).length) {
+        map.set(key, victim);
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+// ----------------------
+// NEWS FETCHING
+// ----------------------
 const SEARCH_QUERIES = [
   'Trump broken promise fact check',
   'Trump tariff manufacturing jobs',
@@ -29,75 +69,37 @@ const SEARCH_QUERIES = [
   'Trump constitutional violation',
 ];
 
-// ----------------------
-// Deduplication helper
-// ----------------------
-function dedupeIceVictims(iceVictims) {
-  const map = new Map();
-
-  for (const victim of iceVictims) {
-    const key = [
-      victim.date,
-      victim.location,
-      victim.agency
-    ].join("|");
-
-    if (!map.has(key)) {
-      map.set(key, victim);
-    } else {
-      const existing = map.get(key);
-      const existingScore = JSON.stringify(existing).length;
-      const newScore = JSON.stringify(victim).length;
-
-      if (newScore > existingScore) {
-        map.set(key, victim);
-      }
-    }
-  }
-
-  return Array.from(map.values());
-}
-
-// ----------------------
-// NEWS FETCHING
-// ----------------------
 async function fetchNewsRSS(query) {
   try {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
     const response = await fetch(url);
     const text = await response.text();
-    
+
     const items = [];
-    const itemMatches = text.match(/<item>([\s\S]*?)<\/item>/g) || [];
-    
-    for (const item of itemMatches.slice(0, 3)) {
-      const title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1') || '';
-      const link = item.match(/<link>([\s\S]*?)<\/link>/)?.[1] || '';
-      const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || '';
-      
-      if (title && link) {
-        items.push({ title, link, pubDate, query });
-      }
+    const matches = text.match(/<item>([\s\S]*?)<\/item>/g) || [];
+
+    for (const item of matches.slice(0, 3)) {
+      const title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
+      const link = item.match(/<link>([\s\S]*?)<\/link>/)?.[1];
+      const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1];
+
+      if (title && link) items.push({ title, link, pubDate, query });
     }
-    
+
     return items;
-  } catch (err) {
-    console.error(`Error fetching news for "${query}":`, err);
+  } catch {
     return [];
   }
 }
 
 async function fetchAllNews() {
-  const allNews = [];
-  for (const query of SEARCH_QUERIES) {
-    const news = await fetchNewsRSS(query);
-    allNews.push(...news);
-  }
-  
+  const all = [];
+  for (const q of SEARCH_QUERIES) all.push(...await fetchNewsRSS(q));
+
   const seen = new Set();
-  return allNews.filter(item => {
-    if (seen.has(item.title)) return false;
-    seen.add(item.title);
+  return all.filter(n => {
+    if (seen.has(n.title)) return false;
+    seen.add(n.title);
     return true;
   });
 }
@@ -105,257 +107,133 @@ async function fetchAllNews() {
 // ----------------------
 // GEMINI CALL
 // ----------------------
-async function callGemini(prompt, retries = 3) {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      const response = await fetch(GEMINI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
-        }),
-      });
+async function callGemini(prompt) {
+  const res = await fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: 4096,
+      },
+    }),
+  });
 
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Gemini error ${response.status}: ${errText}`);
-      }
-
-      const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    } catch (err) {
-      console.warn(`Attempt ${attempt + 1} failed: ${err.message}`);
-      if (attempt < retries - 1) {
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-      } else {
-        throw err;
-      }
-    }
+  if (!res.ok) {
+    throw new Error(`Gemini error ${res.status}: ${await res.text()}`);
   }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
 // ----------------------
-// SUPABASE INTERACTION
+// SUPABASE
 // ----------------------
 async function getCurrentData() {
-  const response = await fetch(
+  const res = await fetch(
     `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main&select=data`,
     {
       headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
       },
     }
   );
-  if (!response.ok) throw new Error('Failed to fetch current data');
-  const result = await response.json();
-  return result[0]?.data || {};
+  const json = await res.json();
+  return json[0]?.data || {};
 }
 
-async function updateData(newData) {
-  const response = await fetch(
+async function updateData(data) {
+  const res = await fetch(
     `${SUPABASE_URL}/rest/v1/tracker_data?id=eq.main`,
     {
       method: 'PATCH',
       headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
         'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
       },
       body: JSON.stringify({
-        data: newData,
+        data,
         updated_at: new Date().toISOString(),
       }),
     }
   );
-  if (!response.ok) throw new Error(`Failed to update: ${await response.text()}`);
-  return true;
+
+  if (!res.ok) throw new Error(await res.text());
 }
 
 // ----------------------
 // ANALYZE & UPDATE
 // ----------------------
 async function analyzeAndUpdate() {
-  // ----------------------
-  // Helper functions
-  // ----------------------
-  const normalizeStr = str => (str || '').toLowerCase().replace(/[^a-z0-9 ]/g, '');
-  const parseDate = dateStr => {
-    if (!dateStr) return null;
-    const d = new Date(dateStr);
-    if (!isNaN(d)) return d.toISOString().split('T')[0];
-    const parts = dateStr.match(/(\d{4})/);
-    return parts ? `${parts[1]}-01-01` : null;
-  };
-  const incidentExists = (newInc, existing) => {
-    const newName = normalizeStr(newInc.name);
-    const newLoc = normalizeStr(newInc.location);
-    const newDate = parseDate(newInc.date);
-
-    return existing.some(v => {
-      const existingName = normalizeStr(v.name);
-      const existingLoc = normalizeStr(v.location);
-      const existingDate = parseDate(v.date);
-      if (newName && existingName && newName === existingName) return true;
-      if (newDate && existingDate && newDate === existingDate && newLoc && existingLoc === newLoc) return true;
-      return false;
-    });
-  };
-  const isOrdinalDuplicate = (headline, existingIncidents) => {
-    if (!headline) return false;
-    const ordinals = ['second', 'third', 'fourth', 'another', 'additional', 'new'];
-    const lower = headline.toLowerCase();
-    const mentionsOrdinal = ordinals.some(o => lower.includes(o));
-    if (!mentionsOrdinal) return false;
-    return existingIncidents.some(v => {
-      const loc = normalizeStr(v.location);
-      return loc && lower.includes(loc.split(' ')[0]);
-    });
-  };
-
-  // ----------------------
-  // Fetch news
-  // ----------------------
-  console.log('Fetching news...');
   const news = await fetchAllNews();
-  console.log(`Found ${news.length} news items`);
-  if (news.length === 0) return { updated: false, reason: 'No news found' };
+  if (!news.length) return { updated: false, reason: 'No news' };
 
   const currentData = await getCurrentData();
-  const newsText = news.map(n => `- ${n.title} (${n.pubDate})`).join('\n');
+  const headlines = news.map(n => `- ${n.title}`).join('\n');
 
-  // ----------------------
-  // Gemini prompt
-  // ----------------------
-  const prompt = `You are analyzing recent news headlines to update a Trump accountability tracker.
-RECENT NEWS HEADLINES:
-${newsText}
-CURRENT TRACKER DATA:
-- Broken promises tracked: ${currentData.brokenPromises?.length || 0}
-- ICE victims: ${currentData.iceVictims?.map(v => v.name).join(', ') || 'None'}
-- Golf trips: ${(currentData.golf?.marALagoTrips || 0) + (currentData.golf?.bedminsterTrips || 0) + (currentData.golf?.scotlandTrips || 0)} total
-TASK:
-1. For each potential new ICE/CBP incident:
-   - Extract full name if available.
-   - Extract date of incident.
-   - Extract location (city, state).
-   - Extract agency involved.
-   - Determine if this is a **new incident** or a reference to a previously reported incident (cross-check using current tracker data). 
-     - If name is not available, consider it new **only if the date and location do not match existing entries**.
-     - If headline uses ordinal words like "second", "third", or "another" but refers to a known person or same date/location, treat it as existing.
-2. Extract any new evidence of broken promises, self-dealing, golf trips, or wealth updates as before.
-3. Return ONLY valid JSON with this structure:
+  const prompt = `
+Analyze the following news headlines and determine whether they introduce NEW, VERIFIED updates.
+
+HEADLINES:
+${headlines}
+
+Return ONLY valid JSON.
+No markdown. No commentary. No code fences.
+Start with { and end with }.
+
+Schema:
 {
   "hasUpdates": true/false,
   "updates": {
-    "newIceIncident": { "name": "", "date": "", "location": "", "details": "", "agency": "", "isNew": true/false } or null,
-    "brokenPromiseEvidence": { "promiseId": "...", "newFact": "..." } or null,
-    "newGolfTrips": number or null,
-    "wealthUpdate": { "amount": number, "source": "Forbes/Bloomberg" } or null
+    "newIceIncident": {...} | null,
+    "brokenPromiseEvidence": {...} | null,
+    "newGolfTrips": number | null,
+    "wealthUpdate": {...} | null
   },
-  "reasoning": "Explain what was found and why it matters",
-  "headlineSource": "The specific headline this came from"
+  "reasoning": "string",
+  "headlineSource": "string"
 }
-IMPORTANT: Only report incidents that are clearly **new**. Do not invent data. Return JSON only, no markdown.`;
+`;
 
-  console.log('Calling Gemini...');
-  const response = await callGemini(prompt);
+  const raw = await callGemini(prompt);
 
-  let result;
+  let parsed;
   try {
-    const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    result = JSON.parse(cleaned);
-  } catch (e) {
-    console.error('Parse error:', response);
-    return { updated: false, error: 'Parse error', raw: response.substring(0, 500) };
+    parsed = extractJson(raw);
+  } catch (err) {
+    console.error('Gemini parse failure:', raw);
+    return { updated: false, error: 'Parse error', raw: raw.slice(0, 2000) };
   }
 
-  // ----------------------
-  // Process updates
-  // ----------------------
-  if (result.hasUpdates && result.updates) {
-    let madeChanges = false;
-
-    // ICE incident
-    if (result.updates.newIceIncident) {
-      const ni = result.updates.newIceIncident;
-      const exists = incidentExists(ni, currentData.iceVictims || []);
-      if (!exists && !isOrdinalDuplicate(ni.details || ni.name, currentData.iceVictims || [])) {
-        currentData.iceVictims = [...(currentData.iceVictims || []), {
-          id: ni.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `incident-${Date.now()}`,
-          name: ni.name || 'Unknown',
-          date: ni.date || 'Unknown',
-          location: ni.location || 'Unknown',
-          details: ni.details || '',
-          agency: ni.agency || 'ICE/CBP',
-          citizenship: 'Unknown - needs verification',
-          sources: ['News reports - needs verification'],
-          officialResponse: 'Pending',
-          witnessAccount: 'Pending',
-        }];
-        madeChanges = true;
-      }
-    }
-
-    // Deduplicate ICE victims before saving
-    if (currentData.iceVictims && currentData.iceVictims.length > 1) {
-      currentData.iceVictims = dedupeIceVictims(currentData.iceVictims);
-    }
-
-    // brokenPromiseEvidence
-    if (result.updates.brokenPromiseEvidence?.promiseId) {
-      const bp = result.updates.brokenPromiseEvidence;
-      const promise = currentData.brokenPromises?.find(p => p.id === bp.promiseId);
-      if (promise && bp.newFact && !promise.reality.includes(bp.newFact)) {
-        promise.reality.push(bp.newFact);
-        madeChanges = true;
-      }
-    }
-
-    // Golf trips
-    if (result.updates.newGolfTrips && typeof result.updates.newGolfTrips === 'number') {
-      const current = (currentData.golf?.marALagoTrips || 0);
-      const newTrips = parseInt(result.updates.newGolfTrips);
-      if (newTrips > current && newTrips <= 200) {
-        currentData.golf = currentData.golf || {};
-        currentData.golf.marALagoTrips = newTrips;
-        madeChanges = true;
-      }
-    }
-
-    // Wealth update
-    if (result.updates.wealthUpdate?.amount) {
-      const amount = parseFloat(result.updates.wealthUpdate.amount);
-      if (amount >= 0.5 && amount <= 500) {
-        currentData.wealth = currentData.wealth || {};
-        currentData.wealth.current = amount;
-        currentData.wealth.source = result.updates.wealthUpdate.source || 'Forbes';
-        madeChanges = true;
-      }
-    }
-
-    if (madeChanges) {
-      currentData.lastUpdated = new Date().toISOString();
-      currentData.lastUpdateReason = result.reasoning;
-      currentData.lastUpdateSource = result.headlineSource;
-      await updateData(currentData);
-
-      return {
-        updated: true,
-        changes: result.updates,
-        reasoning: result.reasoning,
-        newsChecked: news.length,
-      };
-    }
+  if (!parsed.hasUpdates) {
+    return { updated: false, reasoning: parsed.reasoning };
   }
 
-  return {
-    updated: false,
-    reasoning: result.reasoning || 'No actionable updates',
-    newsChecked: news.length,
-  };
+  let changed = false;
+
+  if (parsed.updates?.newIceIncident) {
+    currentData.iceVictims = dedupeIceVictims([
+      ...(currentData.iceVictims || []),
+      {
+        id: `incident-${Date.now()}`,
+        ...parsed.updates.newIceIncident,
+      },
+    ]);
+    changed = true;
+  }
+
+  if (changed) {
+    currentData.lastUpdated = new Date().toISOString();
+    currentData.lastUpdateReason = parsed.reasoning;
+    currentData.lastUpdateSource = parsed.headlineSource;
+    await updateData(currentData);
+  }
+
+  return { updated: changed, reasoning: parsed.reasoning };
 }
 
 // ----------------------
@@ -363,25 +241,20 @@ IMPORTANT: Only report incidents that are clearly **new**. Do not invent data. R
 // ----------------------
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const apiKey = req.headers['x-api-key'];
-  if (CRON_SECRET && apiKey !== CRON_SECRET) {
+  if (CRON_SECRET && req.headers['x-api-key'] !== CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  if (!GEMINI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    return res.status(500).json({ error: 'Missing env vars' });
   }
 
   try {
     const result = await analyzeAndUpdate();
-    return res.status(200).json({ success: true, timestamp: new Date().toISOString(), ...result });
-  } catch (error) {
-    console.error('Error:', error);
-    return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, ...result });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ success: false, error: e.message });
   }
 }
