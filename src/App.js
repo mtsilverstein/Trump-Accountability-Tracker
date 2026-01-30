@@ -208,6 +208,7 @@ function App() {
                 <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Added This Term</div>
                 <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+${(debtSinceInauguration / 1e12).toFixed(6)}T</div>
               </div>
+              <a href="https://fiscaldata.treasury.gov/datasets/debt-to-the-penny/debt-to-the-penny" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '10px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: U.S. Treasury →</a>
             </Card>
 
             {/* Wealth Card */}
@@ -220,6 +221,7 @@ function App() {
                 <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Gained Since Jan 2024</div>
                 <div style={{ fontSize: '24px', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B <span style={{ fontSize: '14px', fontWeight: '500' }}>(+{wealthGainPercent}%)</span></div>
               </div>
+              <a href="https://www.forbes.com/profile/donald-trump/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '10px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: Forbes Billionaires →</a>
             </Card>
 
             {/* Promises Card */}
@@ -233,60 +235,52 @@ function App() {
             </Card>
           </div>
 
-          {/* The Contrast - Combined Chart */}
+          {/* The Contrast - Proportional Visualization */}
           <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
-            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '16px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '20px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
             
-            {/* Combined comparison chart */}
-            <div style={{ position: 'relative', padding: '20px 16px', background: '#0a0a0f', borderRadius: '12px', marginBottom: '16px' }}>
-              <svg width="100%" height="120" viewBox="0 0 200 120" preserveAspectRatio="none" style={{ display: 'block' }}>
-                {/* Grid lines */}
-                <line x1="0" y1="30" x2="200" y2="30" stroke="#1a1a22" strokeWidth="0.5"/>
-                <line x1="0" y1="60" x2="200" y2="60" stroke="#1a1a22" strokeWidth="0.5"/>
-                <line x1="0" y1="90" x2="200" y2="90" stroke="#1a1a22" strokeWidth="0.5"/>
-                
-                {/* Debt line (red) - starts low, climbs high */}
-                <path d="M0,100 L20,95 L40,92 L60,85 L80,78 L100,68 L120,55 L140,45 L160,32 L180,22 L200,15" 
-                      fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                
-                {/* Wealth line (green) - also climbs but different pattern */}
-                <path d="M0,95 L20,90 L40,88 L60,82 L80,78 L100,72 L120,65 L140,58 L160,48 L180,40 L200,30" 
-                      fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                
-                {/* End dots (static, no pulsing) */}
-                <circle cx="200" cy="15" r="4" fill="#ef4444"/>
-                <circle cx="200" cy="30" r="4" fill="#22c55e"/>
-              </svg>
-              
-              {/* Legend */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '12px', height: '3px', background: '#ef4444', borderRadius: '2px' }}></div>
-                  <span style={{ fontSize: '11px', color: '#ef4444' }}>Debt Added: +{fmt(debtSinceInauguration)}</span>
+            {/* The key ratio - big and clear */}
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ fontSize: '14px', color: '#6b6b7b', marginBottom: '8px' }}>For every $1 Trump gained in wealth...</div>
+              <div style={{ fontSize: 'clamp(48px, 10vw, 64px)', fontWeight: '800', color: '#ef4444', lineHeight: 1 }}>
+                ${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}
+              </div>
+              <div style={{ fontSize: '14px', color: '#6b6b7b', marginTop: '8px' }}>was added to the national debt</div>
+            </div>
+
+            {/* Proportional bar visualization */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>SCALE COMPARISON (if Trump's gain = 1 pixel)</div>
+              <div style={{ position: 'relative', background: '#0a0a0f', borderRadius: '8px', padding: '16px', overflow: 'hidden' }}>
+                {/* Trump's wealth - tiny green bar */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <div style={{ width: '4px', height: '24px', background: '#22c55e', borderRadius: '2px', flexShrink: 0 }}></div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600' }}>Trump's Gain: +${wealthGain.toFixed(1)}B</div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '12px', height: '3px', background: '#22c55e', borderRadius: '2px' }}></div>
-                  <span style={{ fontSize: '11px', color: '#22c55e' }}>Trump Gained: +${wealthGain.toFixed(1)}B</span>
+                {/* Debt - massive red bar that extends off screen */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '100%', height: '24px', background: 'linear-gradient(90deg, #ef4444 0%, #ef4444 95%, transparent 100%)', borderRadius: '2px', position: 'relative' }}>
+                    <div style={{ position: 'absolute', right: '-20px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px' }}>→</div>
+                  </div>
                 </div>
+                <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: '600', marginTop: '8px' }}>Debt Added: +{fmt(debtSinceInauguration)} <span style={{ color: '#6b6b7b', fontWeight: '400' }}>(bar extends {Math.round(debtSinceInauguration / (wealthGain * 1e9))}x further)</span></div>
               </div>
             </div>
             
             {/* Stats comparison */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.15)' }}>
                 <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase' }}>National Debt Added</div>
-                <div style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>Since Jan 20, 2025</div>
+                <div style={{ fontSize: 'clamp(20px, 4vw, 26px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>~${Math.round(debtSinceInauguration / 330000000).toLocaleString()} per American</div>
               </div>
               <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(34,197,94,0.06)', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.15)' }}>
                 <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase' }}>Trump's Wealth Gain</div>
-                <div style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
+                <div style={{ fontSize: 'clamp(20px, 4vw, 26px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
                 <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>+{wealthGainPercent}% since Jan 2024</div>
               </div>
-            </div>
-            
-            <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.05)', borderRadius: '8px', fontSize: '12px', color: '#888', textAlign: 'center' }}>
-              For every <span style={{ color: '#22c55e', fontWeight: '600' }}>$1</span> Trump gained, the national debt increased by <span style={{ color: '#ef4444', fontWeight: '700' }}>${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}</span>
             </div>
           </Card>
 
@@ -337,7 +331,8 @@ function App() {
             <div style={{ padding: '14px 16px', background: 'rgba(234,179,8,0.08)', borderRadius: '10px', border: '1px solid rgba(234,179,8,0.15)', fontSize: '13px', color: '#a8a8b8', lineHeight: 1.6 }}>
               <strong style={{ color: '#eab308' }}>Why it matters:</strong> Each Mar-a-Lago trip costs ~$3.4M. Secret Service pays Trump's resorts directly.
             </div>
-            <div style={{ marginTop: '16px' }}>
+            <a href="https://www.citizensforethics.org/reports-investigations/crew-reports/trumps-term-2-corruption-by-the-numbers-more-golf-trips-more-foreign-visitors-and-more-profits/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '12px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: CREW, GAO →</a>
+            <div style={{ marginTop: '12px' }}>
               <ActionLink onClick={() => handleTabClick('money')} color="#eab308">Full Breakdown →</ActionLink>
             </div>
           </Card>
@@ -399,7 +394,7 @@ function App() {
                 Article III establishes the judiciary as a co-equal branch. Executive defiance of court orders undermines judicial review—a cornerstone of constitutional checks and balances since Marbury v. Madison (1803).
               </p>
             </div>
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: AP News • Reuters • Federal Court Records • ACLU</div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: <a href="https://apnews.com/article/trump-deportations-court-order" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>AP News</a> • <a href="https://www.aclu.org/news/immigrants-rights" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>ACLU</a></div>
           </Card>
 
           {/* Due Process */}
@@ -419,7 +414,7 @@ function App() {
                 "No person shall be... deprived of life, liberty, or property, without due process of law." — Fifth Amendment
               </p>
             </div>
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: ACLU • NPR • Washington Post • Court Filings</div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: <a href="https://www.aclu.org/news/immigrants-rights" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>ACLU</a> • <a href="https://www.npr.org/sections/immigration" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>NPR</a></div>
           </Card>
 
           {/* First Amendment */}
@@ -439,7 +434,7 @@ function App() {
                 "Congress shall make no law... abridging the freedom of speech, or of the press; or the right of the people peaceably to assemble." — First Amendment
               </p>
             </div>
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Committee to Protect Journalists • PEN America • NPR • Video Evidence</div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: <a href="https://cpj.org/americas/usa/" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>Committee to Protect Journalists</a> • <a href="https://pen.org/press-freedom/" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>PEN America</a></div>
           </Card>
 
           {/* Emoluments */}
@@ -459,7 +454,7 @@ function App() {
                 "No Person holding any Office... shall, without the Consent of the Congress, accept of any present, Emolument... from any King, Prince, or foreign State." — Emoluments Clause
               </p>
             </div>
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: CREW • House Oversight Committee • GSA Records • Financial Times</div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: <a href="https://www.citizensforethics.org/reports-investigations/crew-investigations/" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>CREW</a> • <a href="https://oversightdemocrats.house.gov/" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>House Oversight</a></div>
           </Card>
 
           {/* Pardon Power */}
@@ -479,7 +474,7 @@ function App() {
                 While the pardon power is constitutionally broad, using it to pardon those who attacked Congress during certification of an election the President lost raises unprecedented rule-of-law concerns.
               </p>
             </div>
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: DOJ Records • White House Statements • AP News • NPR</div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: <a href="https://apnews.com/article/trump-jan-6-pardons" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>AP News</a> • <a href="https://www.npr.org/2025/01/20/trump-jan-6-pardons" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>NPR</a></div>
           </Card>
 
         </>}
@@ -851,7 +846,7 @@ function App() {
 
             {/* Data source */}
             <div style={{ fontSize: '10px', color: '#4a4a5a', textAlign: 'center', marginTop: '24px' }}>
-              Data compiled from: Wikipedia • NPR • AP News • ACLU • Vera Institute • Local news reports
+              Data compiled from: <a href="https://en.wikipedia.org/wiki/List_of_killings_by_law_enforcement_officers_in_the_United_States" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>Wikipedia</a> • <a href="https://www.npr.org/sections/immigration" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>NPR</a> • <a href="https://www.aclu.org/news/immigrants-rights" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>ACLU</a> • <a href="https://www.vera.org/topics/immigration" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>Vera Institute</a>
             </div>
           </>;
         })()}
