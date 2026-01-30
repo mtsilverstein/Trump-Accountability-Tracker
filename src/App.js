@@ -552,99 +552,190 @@ function App() {
 
         {/* MONEY */}
         {activeTab === 'money' && <>
-          <PageHeader title="Follow the Money" subtitle="Self-dealing and taxpayer money flowing to Trump businesses" />
+          <PageHeader title="Follow the Money" subtitle="How Trump is profiting from the presidency" />
           
-          <Card glow="#eab308" style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', color: '#eab308', fontWeight: '600', marginBottom: '12px' }}>💡 KEY INSIGHT</div>
-            <p style={{ fontSize: '15px', color: '#e8e8ed', lineHeight: 1.7, margin: 0 }}>
-              When Trump golfs at Mar-a-Lago, taxpayers pay ~$3.4 million per trip for Secret Service, Coast Guard, and Air Force One. The Secret Service pays for rooms <strong style={{ color: '#eab308' }}>at resorts Trump owns</strong>, putting taxpayer money directly into his pocket.
-            </p>
-          </Card>
-          
-          {/* Golf Costs - The Big Picture */}
-          <Card glow="#dc2626" style={{ marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <span style={{ fontSize: '16px' }}>⛳</span>
-              <span style={{ fontSize: '14px', color: '#fff', fontWeight: '600' }}>Taxpayer-Funded Golf (2025)</span>
+          {/* The Big Picture - Total Enrichment */}
+          <Card glow="#22c55e" style={{ marginBottom: '24px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', letterSpacing: '1.5px', color: '#6b6b7b', marginBottom: '8px' }}>ESTIMATED WEALTH GAINED SINCE TAKING OFFICE</div>
+              <div style={{ fontSize: 'clamp(42px, 8vw, 56px)', fontWeight: '800', color: '#22c55e', lineHeight: 1 }}>$4.3B+</div>
+              <div style={{ fontSize: '13px', color: '#6b6b7b', marginTop: '8px' }}>Net worth: $2.3B → $6.6B (Forbes)</div>
             </div>
-            <div style={{ fontSize: '42px', fontWeight: '700', color: '#ef4444', marginBottom: '8px' }}>$110.6M</div>
-            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Estimated total cost for 88 golf club visits in 2025</div>
             
+            {/* Wealth breakdown bar */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>WHERE IT COMES FROM</div>
+              <div style={{ display: 'flex', height: '32px', borderRadius: '6px', overflow: 'hidden', marginBottom: '12px' }}>
+                <div style={{ flex: '7', background: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '10px', color: '#fff', fontWeight: '600' }}>CRYPTO 73%</span>
+                </div>
+                <div style={{ flex: '2', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '9px', color: '#fff', fontWeight: '600' }}>TRUTH</span>
+                </div>
+                <div style={{ flex: '1', background: '#eab308', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '8px', color: '#000', fontWeight: '600' }}>RE</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '11px' }}>
+                <span><span style={{ display: 'inline-block', width: '10px', height: '10px', background: '#8b5cf6', borderRadius: '2px', marginRight: '4px' }}></span>Crypto (~$11.6B potential)</span>
+                <span><span style={{ display: 'inline-block', width: '10px', height: '10px', background: '#3b82f6', borderRadius: '2px', marginRight: '4px' }}></span>Truth Social (~$2B)</span>
+                <span><span style={{ display: 'inline-block', width: '10px', height: '10px', background: '#eab308', borderRadius: '2px', marginRight: '4px' }}></span>Real Estate</span>
+              </div>
+            </div>
+            
+            <a href="https://www.nytimes.com/interactive/2025/07/02/business/donald-trump-wealth-net-worth.html" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: NYT, Forbes, Accountable.US →</a>
+          </Card>
+
+          {/* Crypto Empire */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #8b5cf6' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '18px' }}>🪙</span>
+              <span style={{ fontSize: '14px', color: '#a78bfa', fontWeight: '600' }}>The Crypto Empire</span>
+            </div>
+            
+            <div style={{ padding: '16px', background: 'rgba(139,92,246,0.08)', borderRadius: '10px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', color: '#a78bfa', marginBottom: '4px' }}>HOUSE JUDICIARY COMMITTEE FINDING (NOV 2025)</div>
+              <p style={{ fontSize: '14px', color: '#e8e8ed', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>
+                "Donald Trump has turned the Oval Office into the world's most corrupt crypto startup operation, minting staggering personal fortunes for him and his family."
+              </p>
+              <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '8px' }}>— Rep. Jamie Raskin, Ranking Member</div>
+            </div>
+
+            <div style={{ display: 'grid', gap: '10px', marginBottom: '16px' }}>
+              {[
+                { label: '$TRUMP Memecoin', value: '~$4.4B', note: 'Token holdings (80% owned by Trump entities)', color: '#8b5cf6' },
+                { label: 'World Liberty Financial', value: '$550M+', note: 'Token sale revenue (75% to Trump)', color: '#a78bfa' },
+                { label: 'Crypto income (H1 2025)', value: '$800M+', note: 'Cash realized from sales', color: '#c4b5fd' },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: '14px', background: '#0a0a0f', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#fff', fontWeight: '500' }}>{item.label}</div>
+                    <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '2px' }}>{item.note}</div>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: item.color }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.08)', borderRadius: '8px', fontSize: '12px', color: '#fca5a5', lineHeight: 1.6 }}>
+              <strong>The catch:</strong> Buyers of $TRUMP memecoin are down 92% from peak. Melania's token crashed 99%. The Trumps profit; retail investors lose.
+            </div>
+            
+            <a href="https://democrats-judiciary.house.gov/media-center/press-releases/new-report-exposes-the-trump-family-s-multi-billion-dollar-crypto-empire-fueled-by-self-dealing-and-corrupt-foreign-interests" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '12px', fontSize: '11px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: House Judiciary Committee Democrats Report →</a>
+          </Card>
+
+          {/* Taxpayer-Funded Golf */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #ef4444' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '18px' }}>⛳</span>
+              <span style={{ fontSize: '14px', color: '#ef4444', fontWeight: '600' }}>Taxpayer-Funded Golf (2025)</span>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ padding: '16px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', fontWeight: '700', color: '#ef4444' }}>$110.6M</div>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>Estimated cost to taxpayers</div>
+              </div>
+              <div style={{ padding: '16px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', fontWeight: '700', color: '#f87171' }}>88</div>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>Golf club visits (25% of days)</div>
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
               {[
-                { l: 'Golf club visits in 2025', v: '88', note: '25% of days in office' },
-                { l: 'Total property visits', v: '99', note: 'Includes non-golf visits' },
-                { l: 'Cost per Mar-a-Lago trip', v: '$3.4M', note: 'GAO 2019 report' },
-                { l: 'Cost per Bedminster trip', v: '$1.1M', note: 'Smaller aircraft' },
-                { l: 'Scotland trip (July 2025)', v: '~$10M', note: '5-day trip' },
-              ].map((r, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                { label: 'Cost per Mar-a-Lago trip', value: '~$3.4M', note: 'Air Force One, Secret Service, Coast Guard' },
+                { label: 'Cost per Bedminster trip', value: '~$1.1M', note: 'Smaller aircraft' },
+                { label: 'Scotland trip (July 2025)', value: '~$10M', note: '5-day trip, new course ribbon-cutting' },
+                { label: 'First term total (2017-2021)', value: '$151.5M', note: 'On pace to exceed $300M this term' },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <span style={{ fontSize: '13px', color: '#a8a8b8' }}>{r.l}</span>
-                    {r.note && <span style={{ fontSize: '10px', color: '#4a4a5a', marginLeft: '8px' }}>({r.note})</span>}
+                    <div style={{ fontSize: '12px', color: '#a8a8b8' }}>{item.label}</div>
+                    <div style={{ fontSize: '10px', color: '#4a4a5a' }}>{item.note}</div>
                   </div>
-                  <span style={{ fontSize: '14px', color: '#ef4444', fontWeight: '700' }}>{r.v}</span>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#ef4444' }}>{item.value}</div>
                 </div>
               ))}
             </div>
             
-            <div style={{ padding: '14px 16px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.2)', marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#fca5a5', marginBottom: '4px' }}>First Term Comparison</div>
-              <div style={{ fontSize: '13px', color: '#d4d4dc' }}>Trump spent <strong style={{ color: '#ef4444' }}>$151.5M</strong> on golf over 4 years in his first term. He's on pace to exceed <strong style={{ color: '#ef4444' }}>$300M</strong> this term.</div>
-            </div>
-            
-            <a href="https://www.citizensforethics.org/reports-investigations/crew-investigations/secret-service-has-spent-nearly-100k-at-trump-properties/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#6b6b7b', textDecoration: 'underline' }}>Source: CREW, GAO, HuffPost →</a>
+            <a href="https://www.gao.gov/products/gao-19-178" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: GAO Report, CREW, HuffPost →</a>
           </Card>
-          
+
           {/* Secret Service Payments TO Trump */}
           <Card style={{ marginBottom: '16px', borderLeft: '3px solid #eab308' }}>
-            <div style={{ fontSize: '14px', color: '#eab308', fontWeight: '600', marginBottom: '12px' }}>Secret Service Payments to Trump Businesses</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '18px' }}>🏨</span>
+              <span style={{ fontSize: '14px', color: '#eab308', fontWeight: '600' }}>Secret Service Pays Trump's Businesses</span>
+            </div>
+            
             <p style={{ fontSize: '13px', color: '#a8a8b8', marginBottom: '16px', lineHeight: 1.6 }}>
-              These are payments from Secret Service directly to Trump's hotels and resorts - money that goes into his pocket.
+              When agents protect Trump at his properties, they pay for rooms and meals at resorts he owns. This money goes directly into his pocket.
             </p>
-            <div style={{ display: 'grid', gap: '8px', marginBottom: '12px' }}>
+
+            <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
               {[
-                { l: 'Second term (so far)', v: '$100,000+', note: 'First months of 2025' },
-                { l: 'First term total', v: '~$2M', note: '2017-2021' },
-                { l: 'Charged per night', v: 'Up to $800+', note: 'Above gov rate' },
-                { l: 'Bedminster cottage rental', v: '$17,000/mo', note: 'For Secret Service' },
-              ].map((r, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                { label: 'Second term (first months)', value: '$100K+', note: '"Just the tip of the iceberg" — CREW' },
+                { label: 'First term total', value: '~$2M', note: 'FOIA records' },
+                { label: 'Nightly rate charged', value: 'Up to $800+', note: 'Above government rate' },
+                { label: 'Bedminster cottage', value: '$17K/month', note: 'For Secret Service use' },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <span style={{ fontSize: '13px', color: '#a8a8b8' }}>{r.l}</span>
-                    {r.note && <span style={{ fontSize: '10px', color: '#4a4a5a', marginLeft: '8px' }}>({r.note})</span>}
+                    <div style={{ fontSize: '12px', color: '#a8a8b8' }}>{item.label}</div>
+                    <div style={{ fontSize: '10px', color: '#4a4a5a' }}>{item.note}</div>
                   </div>
-                  <span style={{ fontSize: '14px', color: '#eab308', fontWeight: '700' }}>{r.v}</span>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#eab308' }}>{item.value}</div>
                 </div>
               ))}
             </div>
-            <a href="https://www.citizensforethics.org/reports-investigations/crew-investigations/the-secret-service-spent-nearly-2-million-at-trump-properties/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#6b6b7b', textDecoration: 'underline' }}>Source: CREW FOIA Records →</a>
+
+            <div style={{ padding: '12px 14px', background: 'rgba(234,179,8,0.08)', borderRadius: '8px', fontSize: '12px', color: '#fcd34d', lineHeight: 1.6 }}>
+              <strong>Eric Trump claimed</strong> in 2019 the family charged Secret Service "like $50." Records show this was false.
+            </div>
+            
+            <a href="https://www.citizensforethics.org/reports-investigations/crew-investigations/secret-service-has-spent-nearly-100k-at-trump-properties/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '12px', fontSize: '11px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: CREW FOIA Records →</a>
           </Card>
 
-          {/* Crypto */}
-          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #22c55e' }}>
-            <div style={{ fontSize: '14px', color: '#22c55e', fontWeight: '600', marginBottom: '12px' }}>Crypto Ventures</div>
-            <div style={{ fontSize: '36px', fontWeight: '700', color: '#22c55e', marginBottom: '8px' }}>{fmt(selfDealing.cryptoFees || 427000000)}</div>
-            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '12px' }}>Trading fees from $TRUMP memecoin + World Liberty Financial</div>
-            <a href="https://www.ft.com/content/trump-crypto" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#6b6b7b', textDecoration: 'underline' }}>Source: Financial Times, Bloomberg →</a>
+          {/* Other Revenue Streams */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #3b82f6' }}>
+            <div style={{ fontSize: '14px', color: '#3b82f6', fontWeight: '600', marginBottom: '16px' }}>Other Revenue Streams (2025)</div>
+            
+            <div style={{ display: 'grid', gap: '8px', marginBottom: '12px' }}>
+              {[
+                { label: 'Trump Bibles', value: '$3M', note: 'Lee Greenwood partnership' },
+                { label: 'Trump Watches', value: '$2.8M', note: 'Licensing fees' },
+                { label: 'Trump Sneakers & Fragrances', value: '$2.5M', note: 'Licensing fees' },
+                { label: '"45" Guitar', value: '$1M', note: 'Licensing fees' },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#a8a8b8' }}>{item.label}</div>
+                    <div style={{ fontSize: '10px', color: '#4a4a5a' }}>{item.note}</div>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#3b82f6' }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+            
+            <a href="https://time.com/7342470/trump-net-worth-wealth-crypto/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: TIME, Trump Financial Disclosure →</a>
           </Card>
 
-          {/* Israel Aid */}
-          <Card style={{ borderLeft: '3px solid #60a5fa' }}>
-            <div style={{ fontSize: '14px', color: '#60a5fa', fontWeight: '600', marginBottom: '16px' }}>"America First" vs Israel Military Aid</div>
-            <div style={{ fontSize: '36px', fontWeight: '700', color: '#60a5fa', marginBottom: '8px' }}>$21.7B+</div>
-            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>U.S. military aid since Oct 2023</div>
-            {[
-              { l: 'Arms sales since Jan 2025', v: '$10.1B+' },
-              { l: 'Emergency transfer (Mar 2025)', v: '$4B' },
-              { l: 'Bypassed Congress', v: '2 times' }
-            ].map((r, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', color: '#888' }}>{r.l}</span>
-                <span style={{ fontSize: '13px', color: '#60a5fa', fontWeight: '600' }}>{r.v}</span>
+          {/* The Contrast */}
+          <Card style={{ background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '16px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', textAlign: 'center' }}>
+              <div style={{ padding: '20px', background: 'rgba(239,68,68,0.06)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>NATIONAL DEBT ADDED</div>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>Your share: ~${Math.round((data.debt?.perHousehold || 285127) * (debtSinceInauguration / (36.18 * 1e12))).toLocaleString()}</div>
               </div>
-            ))}
-            <a href="https://watson.brown.edu/costsofwar/costs/economic/budget" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#6b6b7b', textDecoration: 'underline' }}>Source: Brown University Costs of War Project →</a>
+              <div style={{ padding: '20px', background: 'rgba(34,197,94,0.06)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>TRUMP'S GAIN</div>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#22c55e' }}>+$4.3B</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>+187% since Jan 2024</div>
+              </div>
+            </div>
           </Card>
         </>}
 
