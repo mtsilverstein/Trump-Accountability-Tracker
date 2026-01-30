@@ -1,11 +1,17 @@
 /**
  * Vercel API: Trump Accountability Tracker Auto-Update
  * 
+ * PRIORITY ACTIONS IMPLEMENTED:
+ * ✅ Action 2: Input validation for all data
+ * ✅ Action 5: Extended to track polls
+ * ✅ Action 6: Extended to track lawsuits
+ * 
  * Features:
- * - Gemini 2.5 Pro (stable) for news analysis
+ * - Gemini 2.5 Pro for news analysis
  * - Smart ICE incident handling (unnamed → named updates)
- * - Lawsuit tracking
- * - Broken promises (static for now)
+ * - Lawsuit tracking (against admin AND by Trump)
+ * - Poll tracking from news
+ * - Input validation/sanitization
  */
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -16,13 +22,166 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
 
 const SEARCH_QUERIES = [
-  'ICE shooting victim',
-  'Border Patrol shooting',
+  'ICE shooting victim 2026',
+  'Border Patrol shooting 2026',
   'ICE agent kills',
-  'Trump lawsuit federal court',
-  'Trump administration sued',
-  'lawsuit against Trump 2025 2026',
+  'Trump lawsuit federal court 2026',
+  'Trump administration sued 2026',
+  'lawsuit against Trump',
+  'Trump sues',
+  'Trump approval rating poll January 2026',
+  'Trump poll numbers',
 ];
+
+// ==================== INPUT VALIDATION (Priority Action #2) ====================
+// Sanitizes and validates ALL data before it enters the database
+
+const MAX_STRING_LENGTH = 1000;
+const MAX_ARRAY_LENGTH = 100;
+const VALID_STATUSES = ['Pending', 'Ruling', 'Dismissed', 'Appealed', 'Blocked', 'Ongoing', 'Mixed'];
+const VALID_CITIZENSHIP = ['US Citizen', 'Legal Resident', 'Undocumented', 'Unknown'];
+const VALID_AGENCIES = ['ICE', 'Border Patrol', 'CBP', 'DHS', 'Unknown'];
+
+/**
+ * Sanitize a string: trim, limit length, remove potentially dangerous characters
+ */
+function sanitizeString(str, maxLength = MAX_STRING_LENGTH) {
+  if (typeof str !== 'string') return '';
+  return str
+    .trim()
+    .slice(0, maxLength)
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+    .replace(/javascript:/gi, '') // Remove javascript: URLs
+    .replace(/on\w+=/gi, ''); // Remove event handlers
+}
+
+/**
+ * Sanitize a number within bounds
+ */
+function sanitizeNumber(num, min = 0, max = 1000000) {
+  const parsed = Number(num);
+  if (isNaN(parsed)) return null;
+  return Math.min(Math.max(parsed, min), max);
+}
+
+/**
+ * Validate and sanitize an ICE incident
+ */
+function validateIceIncident(incident) {
+  if (!incident || typeof incident !== 'object') return null;
+  
+  const name = sanitizeString(incident.name, 200);
+  const date = sanitizeString(incident.date, 50);
+  const location = sanitizeString(incident.location, 200);
+  
+  // Must have name AND (date OR location)
+  if (!name || (!date && !location)) return null;
+  
+  // Validate citizenship
+  let citizenship = sanitizeString(incident.citizenship, 50);
+  if (!VALID_CITIZENSHIP.includes(citizenship)) {
+    citizenship = 'Unknown';
+  }
+  
+  // Validate agency
+  let agency = sanitizeString(incident.agency, 50);
+  if (!VALID_AGENCIES.includes(agency)) {
+    agency = 'Unknown';
+  }
+  
+  return {
+    id: sanitizeString(incident.id, 100) || `${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+    name,
+    age: sanitizeNumber(incident.age, 0, 150) || 0,
+    citizenship,
+    date,
+    location,
+    agency,
+    details: sanitizeString(incident.details, 2000),
+    officialResponse: sanitizeString(incident.officialResponse, 1000),
+    witnessAccount: sanitizeString(incident.witnessAccount, 1000),
+    sources: Array.isArray(incident.sources) 
+      ? incident.sources.slice(0, 10).map(s => sanitizeString(s, 200)).filter(Boolean)
+      : [],
+  };
+}
+
+/**
+ * Validate and sanitize a lawsuit
+ */
+function validateLawsuit(lawsuit) {
+  if (!lawsuit || typeof lawsuit !== 'object') return null;
+  
+  const title = sanitizeString(lawsuit.title, 300);
+  if (!title) return null;
+  
+  // Validate status
+  let status = sanitizeString(lawsuit.status, 50);
+  if (!VALID_STATUSES.includes(status)) {
+    status = 'Pending';
+  }
+  
+  return {
+    id: sanitizeString(lawsuit.id, 100) || `lawsuit-${Date.now()}`,
+    title,
+    plaintiff: sanitizeString(lawsuit.plaintiff, 300),
+    defendant: sanitizeString(lawsuit.defendant, 300),
+    court: sanitizeString(lawsuit.court, 200),
+    filed: sanitizeString(lawsuit.filed, 50),
+    status,
+    summary: sanitizeString(lawsuit.summary, 2000),
+    ruling: sanitizeString(lawsuit.ruling, 1000),
+    amount: sanitizeString(lawsuit.amount, 50),
+    category: sanitizeString(lawsuit.category, 100),
+    sources: Array.isArray(lawsuit.sources)
+      ? lawsuit.sources.slice(0, 10).map(s => sanitizeString(s, 200)).filter(Boolean)
+      : [],
+  };
+}
+
+/**
+ * Validate and sanitize poll data
+ */
+function validatePollData(polls) {
+  if (!polls || typeof polls !== 'object') return null;
+  
+  return {
+    overall: {
+      approve: sanitizeNumber(polls.overall?.approve, 0, 100),
+      disapprove: sanitizeNumber(polls.overall?.disapprove, 0, 100),
+      source: sanitizeString(polls.overall?.source, 200),
+      date: sanitizeString(polls.overall?.date, 50),
+    },
+    immigration: {
+      approve: sanitizeNumber(polls.immigration?.approve, 0, 100),
+      disapprove: sanitizeNumber(polls.immigration?.disapprove, 0, 100),
+      source: sanitizeString(polls.immigration?.source, 200),
+    },
+    economy: {
+      approve: sanitizeNumber(polls.economy?.approve, 0, 100),
+      disapprove: sanitizeNumber(polls.economy?.disapprove, 0, 100),
+      source: sanitizeString(polls.economy?.source, 200),
+    },
+    netApproval: sanitizeNumber(polls.netApproval, -100, 100),
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+/**
+ * Validate ICE stats
+ */
+function validateIceStats(stats) {
+  if (!stats || typeof stats !== 'object') return null;
+  
+  return {
+    totalShootings: sanitizeNumber(stats.totalShootings, 0, 10000),
+    shootingDeaths: sanitizeNumber(stats.shootingDeaths, 0, 10000),
+    usCitizensKilled: sanitizeNumber(stats.usCitizensKilled, 0, 10000),
+    usCitizensShot: sanitizeNumber(stats.usCitizensShot, 0, 10000),
+    detentionDeaths2025: sanitizeNumber(stats.detentionDeaths2025, 0, 10000),
+    detentionDeaths2026: sanitizeNumber(stats.detentionDeaths2026, 0, 10000),
+  };
+}
 
 // ==================== NEWS FETCHING ====================
 
@@ -38,7 +197,7 @@ async function fetchNewsRSS(query) {
     for (const item of itemMatches.slice(0, 5)) {
       const title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1') || '';
       const pubDate = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || '';
-      if (title) items.push({ title, pubDate, query });
+      if (title) items.push({ title: sanitizeString(title, 500), pubDate, query });
     }
     return items;
   } catch (err) {
@@ -59,7 +218,7 @@ async function fetchAllNews() {
     if (seen.has(item.title)) return false;
     seen.add(item.title);
     return true;
-  });
+  }).slice(0, MAX_ARRAY_LENGTH); // Limit total items
 }
 
 // ==================== GEMINI API ====================
@@ -142,32 +301,21 @@ async function logUpdate(logEntry) {
 }
 
 // ==================== SMART ICE INCIDENT MERGE ====================
-// Handles: unnamed incidents that later get names identified
-
-function isValidIncident(incident) {
-  // Must have a name (even "Unnamed victim" is okay, but not empty/null)
-  if (!incident.name || !incident.name.trim()) return false;
-  // Must have either a date or location
-  if (!incident.date && !incident.location) return false;
-  return true;
-}
-
-function cleanupIncidents(incidents) {
-  // Remove invalid entries and deduplicate
-  return incidents.filter(isValidIncident);
-}
 
 function mergeIceIncidents(existing, newIncidents) {
-  // First, clean up existing data (remove any bad entries)
-  let result = cleanupIncidents(existing);
+  // Validate all existing incidents
+  let result = existing
+    .map(validateIceIncident)
+    .filter(Boolean);
   
-  // Filter new incidents to only valid ones
-  const validNew = newIncidents.filter(isValidIncident);
+  // Validate and filter new incidents
+  const validNew = newIncidents
+    .map(validateIceIncident)
+    .filter(Boolean);
   
   for (const newInc of validNew) {
     // Check if this matches an existing unnamed incident by date/location
     const matchIndex = result.findIndex(ex => {
-      // Same date and location = likely same incident
       const sameDate = ex.date === newInc.date;
       const sameLocation = ex.location === newInc.location;
       const existingIsUnnamed = ex.name?.toLowerCase().includes('unnamed') || 
@@ -181,11 +329,7 @@ function mergeIceIncidents(existing, newIncidents) {
     if (matchIndex >= 0) {
       // Update unnamed incident with new name and details
       console.log(`Updating unnamed incident with: ${newInc.name}`);
-      result[matchIndex] = {
-        ...result[matchIndex],
-        ...newInc,
-        id: newInc.id || `${newInc.name?.toLowerCase().replace(/\s+/g, '-')}`,
-      };
+      result[matchIndex] = { ...result[matchIndex], ...newInc };
     } else {
       // Check for exact ID or name match
       const exactMatch = result.findIndex(ex => 
@@ -203,15 +347,30 @@ function mergeIceIncidents(existing, newIncidents) {
         }
       } else {
         // Truly new incident
-        result.push({
-          ...newInc,
-          id: newInc.id || `${newInc.date}-${newInc.location}`.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        });
+        result.push(newInc);
       }
     }
   }
   
-  return result;
+  // Limit total incidents
+  return result.slice(0, MAX_ARRAY_LENGTH);
+}
+
+// ==================== MERGE LAWSUITS ====================
+
+function mergeLawsuits(existing, newLawsuits) {
+  // Validate all
+  const validExisting = existing.map(validateLawsuit).filter(Boolean);
+  const validNew = newLawsuits.map(validateLawsuit).filter(Boolean);
+  
+  const existingIds = new Set(validExisting.map(l => l.id));
+  const existingTitles = new Set(validExisting.map(l => l.title.toLowerCase()));
+  
+  const trulyNew = validNew.filter(l => 
+    !existingIds.has(l.id) && !existingTitles.has(l.title.toLowerCase())
+  );
+  
+  return [...validExisting, ...trulyNew].slice(0, MAX_ARRAY_LENGTH);
 }
 
 // ==================== STATIC DATA ====================
@@ -246,7 +405,7 @@ function getBrokenPromises() {
     },
     {
       id: "energy-50",
-      title: "Energy Bills Cut 50%",
+      title: "Energy Prices 50% Cut",
       quote: "I will cut your energy and electricity prices in half, 50%",
       status: "BROKEN",
       promise: "Cut energy bills in HALF within 12 months",
@@ -259,7 +418,7 @@ function getBrokenPromises() {
     },
     {
       id: "ukraine-24h",
-      title: "End Ukraine War in 24 Hours",
+      title: "End Ukraine War 24h",
       quote: "I will get that done within 24 hours",
       status: "BROKEN",
       promise: "End Ukraine war within 24 HOURS",
@@ -354,7 +513,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: 'Updated broken promises, no news found', updated: true });
     }
 
-    // Build prompt for Gemini
+    // Build prompt for Gemini - EXTENDED to include polls
     const headlines = news.map(n => `- ${n.title} (${n.pubDate})`).join('\n');
     const existingIce = (currentData.iceVictims || []).map(v => 
       `${v.name} (${v.date}, ${v.location})`
@@ -397,12 +556,35 @@ Return ONLY valid JSON (no markdown, no backticks) with this exact structure:
       "status": "Pending / Ruling / Dismissed / Appealed",
       "summary": "What the case is about",
       "ruling": "Court ruling if any",
+      "amount": "Dollar amount if specified",
+      "category": "against-admin / by-trump / against-trump-personal",
       "sources": ["Source1"]
     }
   ],
+  "polls": {
+    "overall": {
+      "approve": 39,
+      "disapprove": 56,
+      "source": "Pollster name",
+      "date": "Month Year"
+    },
+    "immigration": {
+      "approve": 39,
+      "disapprove": 53,
+      "source": "Pollster name"
+    },
+    "economy": {
+      "approve": null,
+      "disapprove": null,
+      "source": null
+    },
+    "netApproval": -12.9
+  },
   "iceStatsUpdate": {
     "totalShootings": null,
-    "shootingDeaths": null
+    "shootingDeaths": null,
+    "usCitizensKilled": null,
+    "usCitizensShot": null
   },
   "updateReason": "Brief description of what was found"
 }
@@ -411,10 +593,11 @@ CRITICAL RULES:
 1. For ICE incidents: Include shootings/deaths by ICE, Border Patrol, or CBP agents
 2. If a victim's name is unknown, use "Unnamed victim" but STILL include the incident with date/location
 3. If you find a NAME for someone who was previously "Unnamed", include them so we can update the record
-4. For lawsuits: Include cases against Trump personally, the Trump administration, or federal agencies under Trump
-5. Do NOT duplicate incidents/lawsuits already in the database
-6. Set stats to null if no specific numbers found
-7. Return empty arrays [] if nothing new found - this is fine!`;
+4. For lawsuits: Include cases against Trump personally, the Trump administration, federal agencies under Trump, AND cases filed BY Trump
+5. For polls: Extract any approval rating numbers mentioned. Use null if not mentioned.
+6. Do NOT duplicate incidents/lawsuits already in the database
+7. Set stats/polls to null if no specific numbers found
+8. Return empty arrays [] if nothing new found - this is fine!`;
 
     // Call Gemini
     const geminiResponse = await callGemini(prompt);
@@ -427,7 +610,6 @@ CRITICAL RULES:
       parsed = JSON.parse(cleaned);
     } catch (e) {
       console.error('Failed to parse Gemini response:', geminiResponse.substring(0, 500));
-      // Still update broken promises even if parsing fails
       const updatedData = {
         ...currentData,
         brokenPromises: getBrokenPromises(),
@@ -438,25 +620,40 @@ CRITICAL RULES:
       return res.status(200).json({ success: true, message: 'Parse error, updated broken promises', updated: true });
     }
 
-    // Merge ICE incidents (handles unnamed → named updates)
+    // Merge ICE incidents with VALIDATION
     const mergedIce = mergeIceIncidents(
       currentData.iceVictims || [],
       parsed.iceIncidents || []
     );
 
-    // Merge lawsuits
-    const existingLawsuitIds = new Set((currentData.lawsuits || []).map(l => l.id));
-    const newLawsuits = (parsed.lawsuits || []).filter(l => !existingLawsuitIds.has(l.id));
-    const mergedLawsuits = [...(currentData.lawsuits || []), ...newLawsuits];
+    // Merge lawsuits with VALIDATION
+    const mergedLawsuits = mergeLawsuits(
+      currentData.lawsuits || [],
+      parsed.lawsuits || []
+    );
 
-    // Update stats if provided
-    const updatedStats = { ...(currentData.iceStats || {}) };
-    if (parsed.iceStatsUpdate?.totalShootings) {
-      updatedStats.totalShootings = parsed.iceStatsUpdate.totalShootings;
-    }
-    if (parsed.iceStatsUpdate?.shootingDeaths) {
-      updatedStats.shootingDeaths = parsed.iceStatsUpdate.shootingDeaths;
-    }
+    // Update stats if provided - VALIDATED
+    const currentStats = currentData.iceStats || {};
+    const newStats = validateIceStats(parsed.iceStatsUpdate) || {};
+    const updatedStats = {
+      ...currentStats,
+      ...(newStats.totalShootings !== null ? { totalShootings: newStats.totalShootings } : {}),
+      ...(newStats.shootingDeaths !== null ? { shootingDeaths: newStats.shootingDeaths } : {}),
+      ...(newStats.usCitizensKilled !== null ? { usCitizensKilled: newStats.usCitizensKilled } : {}),
+      ...(newStats.usCitizensShot !== null ? { usCitizensShot: newStats.usCitizensShot } : {}),
+    };
+
+    // Update polls if provided - VALIDATED
+    const currentPolls = currentData.polls || {};
+    const newPolls = validatePollData(parsed.polls);
+    const updatedPolls = newPolls ? {
+      ...currentPolls,
+      ...(newPolls.overall?.approve !== null ? { overall: newPolls.overall } : {}),
+      ...(newPolls.immigration?.approve !== null ? { immigration: newPolls.immigration } : {}),
+      ...(newPolls.economy?.approve !== null ? { economy: newPolls.economy } : {}),
+      ...(newPolls.netApproval !== null ? { netApproval: newPolls.netApproval } : {}),
+      lastUpdated: new Date().toISOString(),
+    } : currentPolls;
 
     // Build updated data
     const updatedData = {
@@ -464,9 +661,10 @@ CRITICAL RULES:
       iceVictims: mergedIce,
       iceStats: updatedStats,
       lawsuits: mergedLawsuits,
+      polls: updatedPolls,
       brokenPromises: getBrokenPromises(),
       lastUpdated: new Date().toISOString(),
-      lastUpdateReason: parsed.updateReason || 'Automated update',
+      lastUpdateReason: sanitizeString(parsed.updateReason, 500) || 'Automated update',
     };
 
     // Save to Supabase
@@ -477,30 +675,32 @@ CRITICAL RULES:
     }
 
     // Log the update
+    const newLawsuitsCount = mergedLawsuits.length - (currentData.lawsuits || []).length;
     await logUpdate({
       success: true,
       news_count: news.length,
-      new_incidents: (parsed.iceIncidents || []).length,
-      new_lawsuits: newLawsuits.length,
-      reason: parsed.updateReason || 'Automated update',
+      new_incidents: mergedIce.length - (currentData.iceVictims || []).length,
+      new_lawsuits: newLawsuitsCount,
+      polls_updated: !!newPolls,
+      reason: sanitizeString(parsed.updateReason, 500) || 'Automated update',
     });
 
     console.log('Update complete!');
     return res.status(200).json({
       success: true,
       updated: true,
-      newIncidents: (parsed.iceIncidents || []).length,
-      newLawsuits: newLawsuits.length,
+      newIncidents: mergedIce.length - (currentData.iceVictims || []).length,
+      newLawsuits: newLawsuitsCount,
+      pollsUpdated: !!newPolls,
       reason: parsed.updateReason,
     });
 
   } catch (error) {
     console.error('Update error:', error);
     
-    // Log the error
     await logUpdate({
       success: false,
-      error: error.message,
+      error: sanitizeString(error.message, 500),
     });
     
     return res.status(500).json({ success: false, error: error.message });

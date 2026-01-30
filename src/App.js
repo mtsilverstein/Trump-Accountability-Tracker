@@ -1,10 +1,97 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Component } from 'react';
 import { supabase } from './supabaseClient';
 import { INITIAL_DATA } from './initialData';
+
+// ==================== ERROR BOUNDARY (Priority Action #3) ====================
+// Catches JavaScript errors anywhere in child component tree and displays fallback UI
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ 
+          minHeight: '100vh', 
+          background: '#0a0a0f', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          fontFamily: 'Inter, sans-serif',
+          padding: '20px'
+        }}>
+          <div style={{ 
+            textAlign: 'center', 
+            maxWidth: '400px',
+            padding: '32px',
+            background: '#13131a',
+            borderRadius: '16px',
+            border: '1px solid rgba(239,68,68,0.3)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+            <h2 style={{ color: '#ef4444', margin: '0 0 12px 0', fontSize: '20px' }}>Something went wrong</h2>
+            <p style={{ color: '#6b6b7b', margin: '0 0 24px 0', fontSize: '14px', lineHeight: 1.6 }}>
+              The tracker encountered an error. This has been logged automatically.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '12px 24px',
+                background: '#ef4444',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ==================== RETRY LOGIC (Priority Action #4) ====================
+// Exponential backoff for failed API requests
+
+async function fetchWithRetry(fetchFn, maxAttempts = 3, baseDelay = 1000) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const result = await fetchFn();
+      return result;
+    } catch (error) {
+      console.error(`Attempt ${attempt} failed:`, error.message);
+      if (attempt === maxAttempts) {
+        throw error;
+      }
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.log(`Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
 
 function App() {
   const [data, setData] = useState(INITIAL_DATA);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [lastSync, setLastSync] = useState(null);
   const [now, setNow] = useState(Date.now());
   const [activeTab, setActiveTab] = useState('overview');
@@ -24,12 +111,30 @@ function App() {
   }, []);
 
   async function fetchData() {
+    setError(null);
     try {
-      const { data: result, error } = await supabase.from('tracker_data').select('data, updated_at').eq('id', 'main').single();
-      if (error) throw error;
-      if (result?.data && Object.keys(result.data).length > 0) { setData(result.data); setLastSync(result.updated_at); }
-    } catch (err) { console.error('Error:', err); }
-    finally { setLoading(false); }
+      // Use retry logic for fetching
+      const result = await fetchWithRetry(async () => {
+        const { data: result, error } = await supabase
+          .from('tracker_data')
+          .select('data, updated_at')
+          .eq('id', 'main')
+          .single();
+        if (error) throw error;
+        return result;
+      });
+      
+      if (result?.data && Object.keys(result.data).length > 0) {
+        setData(result.data);
+        setLastSync(result.updated_at);
+      }
+    } catch (err) {
+      console.error('Error fetching data after retries:', err);
+      setError(err.message);
+      // Still show the page with initial/cached data
+    } finally {
+      setLoading(false);
+    }
   }
 
   const INAUGURATION = new Date('2025-01-20T17:00:00Z');
@@ -177,6 +282,34 @@ function App() {
           {lastSync && <div style={{ fontSize: '10px', color: '#3a3a4a', marginTop: '16px' }}>Last sync: {new Date(lastSync).toLocaleString()}</div>}
         </div>
       </header>
+
+      {/* Error Banner - shows when data fetch failed but we're showing cached data */}
+      {error && (
+        <div style={{ 
+          background: 'rgba(239,68,68,0.1)', 
+          borderBottom: '1px solid rgba(239,68,68,0.3)',
+          padding: '12px 20px',
+          textAlign: 'center'
+        }}>
+          <span style={{ fontSize: '12px', color: '#fca5a5' }}>
+            ⚠️ Could not refresh data. Showing cached version.{' '}
+            <button 
+              onClick={fetchData}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: '#ef4444', 
+                textDecoration: 'underline', 
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontFamily: 'inherit'
+              }}
+            >
+              Retry
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Nav */}
       <nav style={{ background: '#0a0a0f', position: 'sticky', top: 0, zIndex: 1000, borderBottom: '1px solid #1a1a22' }}>
@@ -494,14 +627,40 @@ function App() {
 
         {/* LAWSUITS */}
         {activeTab === 'lawsuits' && <>
-          <PageHeader title="Legal Challenges" subtitle="Unprecedented legal battles against the administration" />
+          <PageHeader title="Legal Challenges" subtitle="Unprecedented legal battles involving the administration" />
+          
+          {/* BREAKING NEWS - Trump suing own agencies */}
+          <Card style={{ marginBottom: '24px', border: '1px solid rgba(239,68,68,0.4)', background: 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, #13131a 100%)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '9px', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#ef4444', color: '#fff', animation: 'pulse 2s infinite' }}>BREAKING</span>
+              <span style={{ fontSize: '12px', color: '#fca5a5', fontWeight: '600' }}>Trump Suing His Own Government</span>
+            </div>
+            <h3 style={{ fontSize: '18px', color: '#fff', margin: '0 0 12px 0', fontWeight: '700' }}>$10 Billion Lawsuit Against IRS & Treasury</h3>
+            <p style={{ fontSize: '13px', color: '#d4d4dc', lineHeight: 1.6, margin: '0 0 12px 0' }}>
+              President Trump filed suit against the IRS and Treasury Department—agencies he oversees—seeking $10B in damages over a 2020 tax return leak. This unprecedented move could put taxpayers on the hook for a massive payout to the sitting president.
+            </p>
+            <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', marginBottom: '12px' }}>
+              <div style={{ fontSize: '11px', color: '#fca5a5', marginBottom: '4px', fontWeight: '600' }}>WHY IT MATTERS</div>
+              <p style={{ fontSize: '12px', color: '#a8a8b8', margin: 0, lineHeight: 1.5 }}>
+                A sitting president suing agencies he controls raises unprecedented conflict-of-interest questions. The leaker (Charles Littlejohn) is already serving 5 years in prison.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <a href="https://www.npr.org/2026/01/30/nx-s1-5693662/trump-sues-irs-and-treasury-for-10-billion-over-leaked-tax-information" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>NPR</a>
+              <span style={{ color: '#3a3a4a' }}>•</span>
+              <a href="https://www.cbsnews.com/news/trump-sues-irs-treasury-10-billion-letting-tax-returns-leak/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>CBS News</a>
+              <span style={{ color: '#3a3a4a' }}>•</span>
+              <a href="https://www.cnbc.com/2026/01/29/trump-sues-irs-and-treasury-for-10-billion-over-leak-of-tax-records.html" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>CNBC</a>
+              <span style={{ color: '#4a4a5a', fontSize: '10px', marginLeft: 'auto' }}>Filed Jan 29, 2026</span>
+            </div>
+          </Card>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
             <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(168,85,247,0.08)', borderRadius: '12px', border: '1px solid rgba(168,85,247,0.2)' }}>
               <div style={{ fontSize: '28px', fontWeight: '700', color: '#a855f7' }}>358+</div>
-              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Lawsuits in 2025</div>
+              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Lawsuits Against Admin (2025)</div>
             </div>
-            <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(59,130,246,0.08)', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
+            <div style={{ textAlign: '24px', padding: '16px', background: 'rgba(59,130,246,0.08)', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
               <div style={{ fontSize: '28px', fontWeight: '700', color: '#3b82f6' }}>24</div>
               <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Supreme Court Emergency Cases</div>
             </div>
@@ -515,31 +674,66 @@ function App() {
           </Card>
 
           <Card style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#a855f7', fontWeight: '600', marginBottom: '16px' }}>Major Areas of Litigation</div>
+            <div style={{ fontSize: '14px', color: '#a855f7', fontWeight: '600', marginBottom: '8px' }}>Major Areas of Litigation</div>
+            <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '16px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginRight: '12px' }}><span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#22c55e' }}></span> Blocked</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginRight: '12px' }}><span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#f59e0b' }}></span> Mixed/Partial</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginRight: '12px' }}><span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#3b82f6' }}></span> Pending</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#ef4444' }}></span> Ongoing</span>
+            </div>
             
             {[
-              { area: 'Birthright Citizenship', status: 'Blocked', desc: 'Multiple courts blocked EO to end birthright citizenship. Supreme Court hearing expected Feb-Apr 2026.', color: '#22c55e' },
-              { area: 'Federal Workforce Cuts', status: 'Mixed', desc: 'Probationary employee firings ruled illegal. DOGE cuts face multiple challenges.', color: '#f59e0b' },
-              { area: 'Tariffs (IEEPA)', status: 'Pending', desc: 'Major case on Trump\'s use of emergency powers for tariffs. Supreme Court arguments underway.', color: '#3b82f6' },
-              { area: 'Immigration Enforcement', status: 'Ongoing', desc: '100+ lawsuits on F-1 visa revocations alone. Minneapolis suing over Operation Metro Surge.', color: '#ef4444' },
-              { area: 'Transgender Military Ban', status: 'Blocked', desc: 'Preliminary injunction granted. Administration appealed to Supreme Court.', color: '#a855f7' },
-              { area: 'DEI Programs', status: 'Mixed', desc: 'Federal funding freezes temporarily blocked. Multiple state AG lawsuits pending.', color: '#eab308' },
+              { area: 'Birthright Citizenship', status: 'Blocked', desc: 'Multiple courts blocked EO to end birthright citizenship. Supreme Court hearing expected Feb-Apr 2026.', color: '#22c55e', url: 'https://www.scotusblog.com/case-files/cases/trump-v-casa-inc/' },
+              { area: 'Federal Workforce Cuts', status: 'Mixed', desc: 'Probationary employee firings ruled illegal. DOGE cuts face multiple challenges.', color: '#f59e0b', url: 'https://www.afge.org/article/summary-of-afge-lawsuits-against-trump--how-litigation-works-2/' },
+              { area: 'Tariffs (IEEPA)', status: 'Pending', desc: 'Major case on Trump\'s use of emergency powers for tariffs. Supreme Court arguments underway.', color: '#3b82f6', url: 'https://www.scotusblog.com/case-files/cases/learning-resources-inc-v-trump/' },
+              { area: 'Immigration Enforcement', status: 'Ongoing', desc: '100+ lawsuits on F-1 visa revocations alone. Minneapolis suing over Operation Metro Surge.', color: '#ef4444', url: 'https://www.aclu.org/news/immigrants-rights' },
+              { area: 'Transgender Military Ban', status: 'Blocked', desc: 'Preliminary injunction granted. Administration appealed to Supreme Court.', color: '#22c55e', url: 'https://www.lambdalegal.org/in-court/cases/doe-v-trump' },
+              { area: 'DEI Programs', status: 'Mixed', desc: 'Federal funding freezes temporarily blocked. Multiple state AG lawsuits pending.', color: '#f59e0b', url: 'https://www.justsecurity.org/107087/tracker-litigation-legal-challenges-trump-administration/' },
             ].map((item, i) => (
               <div key={i} style={{ padding: '14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '10px', borderLeft: `3px solid ${item.color}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '14px', color: '#fff', fontWeight: '600' }}>{item.area}</span>
                   <span style={{ fontSize: '10px', fontWeight: '600', padding: '3px 8px', borderRadius: '4px', background: `${item.color}20`, color: item.color }}>{item.status}</span>
                 </div>
-                <p style={{ fontSize: '12px', color: '#a8a8b8', margin: 0, lineHeight: 1.5 }}>{item.desc}</p>
+                <p style={{ fontSize: '12px', color: '#a8a8b8', margin: '0 0 8px 0', lineHeight: 1.5 }}>{item.desc}</p>
+                <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>View case details →</a>
               </div>
             ))}
+          </Card>
+
+          {/* Trump's Own Lawsuits */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #eab308' }}>
+            <div style={{ fontSize: '14px', color: '#eab308', fontWeight: '600', marginBottom: '16px' }}>Lawsuits Filed BY Trump (2025-2026)</div>
+            <p style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '16px' }}>The president has also filed numerous personal lawsuits while in office:</p>
+            
+            {[
+              { target: 'IRS & Treasury', amount: '$10B', date: 'Jan 29, 2026', desc: 'Over tax return leaks to media', url: 'https://www.npr.org/2026/01/30/nx-s1-5693662/trump-sues-irs-and-treasury-for-10-billion-over-leaked-tax-information' },
+              { target: 'BBC', amount: '$5B', date: 'Jan 2026', desc: 'Over documentary editing of Jan 6 remarks', url: 'https://www.foxnews.com/media/trump-files-powerhouse-10-billion-lawsuit-bbc-documentary-editing-jan-6-remarks' },
+              { target: 'JPMorgan Chase', amount: '$5B', date: 'Jan 2026', desc: 'For closing his accounts in 2021', url: 'https://www.cbsnews.com/news/trump-sues-irs-treasury-10-billion-letting-tax-returns-leak/' },
+              { target: 'New York Times', amount: 'Unspecified', date: '2025', desc: 'Defamation over business articles (dismissed, refiled)', url: 'https://www.nytimes.com/2025/trump-lawsuit' },
+            ].map((suit, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '8px' }}>
+                <div>
+                  <div style={{ fontSize: '13px', color: '#fff', fontWeight: '500' }}>{suit.target}</div>
+                  <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '2px' }}>{suit.desc}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '14px', color: '#eab308', fontWeight: '600' }}>{suit.amount}</div>
+                  <a href={suit.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '9px', color: '#6b6b7b', textDecoration: 'underline' }}>{suit.date}</a>
+                </div>
+              </div>
+            ))}
+            
+            <div style={{ padding: '12px 14px', background: 'rgba(234,179,8,0.08)', borderRadius: '8px', marginTop: '12px', fontSize: '12px', color: '#a8a8b8' }}>
+              <strong style={{ color: '#eab308' }}>Total sought:</strong> $20B+ in personal lawsuits while serving as president
+            </div>
           </Card>
 
           <Card style={{ marginBottom: '16px' }}>
             <div style={{ fontSize: '14px', color: '#ef4444', fontWeight: '600', marginBottom: '16px' }}>Supreme Court Record (2025)</div>
             <div style={{ padding: '14px', background: 'rgba(239,68,68,0.06)', borderRadius: '8px', marginBottom: '12px' }}>
               <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>
-                The Supreme Court overwhelmingly sided with the Trump administration in 2025, ruling in favor in 23 of 24 emergency docket cases. Only Justice Jackson voted against the administration in every case.
+                The Supreme Court overwhelmingly sided with the Trump administration in 2025, ruling in favor in <strong>23 of 24</strong> emergency docket cases. Only Justice Jackson voted against the administration in every case.
               </p>
             </div>
             <div style={{ fontSize: '12px', color: '#6b6b7b', lineHeight: 1.7 }}>
@@ -548,7 +742,7 @@ function App() {
           </Card>
 
           <Card>
-            <div style={{ fontSize: '14px', color: '#3b82f6', fontWeight: '600', marginBottom: '16px' }}>Resources</div>
+            <div style={{ fontSize: '14px', color: '#3b82f6', fontWeight: '600', marginBottom: '16px' }}>Comprehensive Trackers</div>
             <div style={{ display: 'grid', gap: '10px' }}>
               <a href="https://www.justsecurity.org/107087/tracker-litigation-legal-challenges-trump-administration/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '12px 14px', background: 'rgba(59,130,246,0.1)', borderRadius: '8px', textDecoration: 'none' }}>
                 <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>Just Security Litigation Tracker</div>
@@ -1156,4 +1350,13 @@ function App() {
   );
 }
 
-export default App;
+// Wrap App with ErrorBoundary for production safety
+function AppWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+export default AppWithErrorBoundary;
