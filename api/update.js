@@ -116,13 +116,55 @@ async function updateSupabase(data) {
   return response.ok;
 }
 
+async function logUpdate(logEntry) {
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/update_logs`,
+      {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
+          timestamp: new Date().toISOString(),
+          ...logEntry,
+        }),
+      }
+    );
+    return response.ok;
+  } catch (err) {
+    console.error('Failed to write update log:', err);
+    return false;
+  }
+}
+
 // ==================== SMART ICE INCIDENT MERGE ====================
 // Handles: unnamed incidents that later get names identified
 
+function isValidIncident(incident) {
+  // Must have a name (even "Unnamed victim" is okay, but not empty/null)
+  if (!incident.name || !incident.name.trim()) return false;
+  // Must have either a date or location
+  if (!incident.date && !incident.location) return false;
+  return true;
+}
+
+function cleanupIncidents(incidents) {
+  // Remove invalid entries and deduplicate
+  return incidents.filter(isValidIncident);
+}
+
 function mergeIceIncidents(existing, newIncidents) {
-  const result = [...existing];
+  // First, clean up existing data (remove any bad entries)
+  let result = cleanupIncidents(existing);
   
-  for (const newInc of newIncidents) {
+  // Filter new incidents to only valid ones
+  const validNew = newIncidents.filter(isValidIncident);
+  
+  for (const newInc of validNew) {
     // Check if this matches an existing unnamed incident by date/location
     const matchIndex = result.findIndex(ex => {
       // Same date and location = likely same incident
@@ -434,6 +476,15 @@ CRITICAL RULES:
       throw new Error('Failed to save to Supabase');
     }
 
+    // Log the update
+    await logUpdate({
+      success: true,
+      news_count: news.length,
+      new_incidents: (parsed.iceIncidents || []).length,
+      new_lawsuits: newLawsuits.length,
+      reason: parsed.updateReason || 'Automated update',
+    });
+
     console.log('Update complete!');
     return res.status(200).json({
       success: true,
@@ -445,6 +496,13 @@ CRITICAL RULES:
 
   } catch (error) {
     console.error('Update error:', error);
+    
+    // Log the error
+    await logUpdate({
+      success: false,
+      error: error.message,
+    });
+    
     return res.status(500).json({ success: false, error: error.message });
   }
 }

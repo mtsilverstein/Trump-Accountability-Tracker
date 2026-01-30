@@ -46,9 +46,7 @@ function App() {
   const wealthGain = (data.wealth?.current || 6.6) - (data.wealth?.previous || 2.3);
   const wealthGainPercent = Math.round((wealthGain / (data.wealth?.previous || 2.3)) * 100);
   const golf = data.golf || {};
-  const totalTrips = (golf.marALagoTrips || 0) + (golf.bedminsterTrips || 0) + (golf.scotlandTrips || 0);
   const selfDealing = data.selfDealing || {};
-  const selfDealingFromGolf = totalTrips * (selfDealing.revenuePerTrip || 60000);
 
   const fmt = (val, dec = 2) => {
     if (val >= 1e12) return `$${(val / 1e12).toFixed(dec)}T`;
@@ -206,15 +204,6 @@ function App() {
               </div>
               <div style={{ fontSize: '12px', color: '#6b6b7b', margin: '8px 0 12px' }}>+{fmt(data.debt?.perSecond || 92912.33, 0)}/second</div>
               
-              {/* Mini stock chart - debt rising */}
-              <svg width="100%" height="32" viewBox="0 0 120 32" preserveAspectRatio="none" style={{ display: 'block', marginBottom: '12px' }}>
-                <path d="M0,28 L8,26 L16,27 L24,24 L32,25 L40,22 L48,23 L56,20 L64,21 L72,18 L80,16 L88,17 L96,14 L104,12 L112,10 L120,8" 
-                      fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-                <circle cx="120" cy="8" r="3" fill="#ef4444">
-                  <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
-                </circle>
-              </svg>
-              
               <div style={{ padding: '14px 16px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.15)' }}>
                 <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Added This Term</div>
                 <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+${(debtSinceInauguration / 1e12).toFixed(6)}T</div>
@@ -226,15 +215,6 @@ function App() {
               <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Trump Net Worth</div>
               <div style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: '700', color: '#22c55e', letterSpacing: '-1px' }}>${wealth.current || 6.6}B</div>
               <div style={{ fontSize: '12px', color: '#6b6b7b', margin: '8px 0 12px' }}>Forbes • Rank #{wealth.rank || 581}</div>
-              
-              {/* Mini stock chart - wealth rising */}
-              <svg width="100%" height="32" viewBox="0 0 120 32" preserveAspectRatio="none" style={{ display: 'block', marginBottom: '12px' }}>
-                <path d="M0,26 L8,27 L16,24 L24,25 L32,22 L40,20 L48,21 L56,18 L64,19 L72,15 L80,16 L88,12 L96,13 L104,10 L112,8 L120,6" 
-                      fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-                <circle cx="120" cy="6" r="3" fill="#22c55e">
-                  <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
-                </circle>
-              </svg>
               
               <div style={{ padding: '14px 16px', background: 'rgba(34,197,94,0.08)', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.15)' }}>
                 <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Gained Since Jan 2024</div>
@@ -253,62 +233,60 @@ function App() {
             </Card>
           </div>
 
-          {/* The Contrast - realistic stock charts */}
+          {/* The Contrast - Combined Chart */}
           <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
-            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '20px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '10px', alignItems: 'center' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '16px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
+            
+            {/* Combined comparison chart */}
+            <div style={{ position: 'relative', padding: '20px 16px', background: '#0a0a0f', borderRadius: '12px', marginBottom: '16px' }}>
+              <svg width="100%" height="120" viewBox="0 0 200 120" preserveAspectRatio="none" style={{ display: 'block' }}>
+                {/* Grid lines */}
+                <line x1="0" y1="30" x2="200" y2="30" stroke="#1a1a22" strokeWidth="0.5"/>
+                <line x1="0" y1="60" x2="200" y2="60" stroke="#1a1a22" strokeWidth="0.5"/>
+                <line x1="0" y1="90" x2="200" y2="90" stroke="#1a1a22" strokeWidth="0.5"/>
+                
+                {/* Debt line (red) - starts low, climbs high */}
+                <path d="M0,100 L20,95 L40,92 L60,85 L80,78 L100,68 L120,55 L140,45 L160,32 L180,22 L200,15" 
+                      fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                
+                {/* Wealth line (green) - also climbs but different pattern */}
+                <path d="M0,95 L20,90 L40,88 L60,82 L80,78 L100,72 L120,65 L140,58 L160,48 L180,40 L200,30" 
+                      fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                
+                {/* End dots (static, no pulsing) */}
+                <circle cx="200" cy="15" r="4" fill="#ef4444"/>
+                <circle cx="200" cy="30" r="4" fill="#22c55e"/>
+              </svg>
               
-              {/* Trump's Gain - Green Up Chart */}
-              <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(34,197,94,0.04)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.12)' }}>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Trump's Gain</div>
-                <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', fontWeight: '700', color: '#22c55e', marginBottom: '12px' }}>+${wealthGain.toFixed(1)}B</div>
-                <svg width="100%" height="48" viewBox="0 0 100 48" preserveAspectRatio="none" style={{ display: 'block' }}>
-                  {/* Grid lines */}
-                  <line x1="0" y1="12" x2="100" y2="12" stroke="#1a1a22" strokeWidth="0.5"/>
-                  <line x1="0" y1="24" x2="100" y2="24" stroke="#1a1a22" strokeWidth="0.5"/>
-                  <line x1="0" y1="36" x2="100" y2="36" stroke="#1a1a22" strokeWidth="0.5"/>
-                  {/* Stock line with realistic variability - trending up */}
-                  <path d="M0,40 L5,38 L10,39 L15,36 L20,37 L25,34 L30,35 L35,32 L40,34 L45,30 L50,31 L55,28 L60,26 L65,28 L70,24 L75,22 L80,24 L85,20 L90,18 L95,16 L100,12" 
-                        fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  {/* End dot */}
-                  <circle cx="100" cy="12" r="3" fill="#22c55e">
-                    <animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite"/>
-                  </circle>
-                </svg>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}>
-                  <span style={{ color: '#22c55e', fontSize: '14px' }}>▲</span>
-                  <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: '600' }}>+187%</span>
+              {/* Legend */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '12px', height: '3px', background: '#ef4444', borderRadius: '2px' }}></div>
+                  <span style={{ fontSize: '11px', color: '#ef4444' }}>Debt Added: +{fmt(debtSinceInauguration)}</span>
                 </div>
-              </div>
-              
-              <div style={{ fontSize: '12px', color: '#3a3a4a', fontWeight: '600' }}>vs</div>
-              
-              {/* Debt - Red chart going up (bad) */}
-              <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(239,68,68,0.04)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.12)' }}>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Added to Debt</div>
-                <div style={{ fontSize: 'clamp(20px, 5vw, 28px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace', marginBottom: '12px' }}>+{fmt(debtSinceInauguration)}</div>
-                <svg width="100%" height="48" viewBox="0 0 100 48" preserveAspectRatio="none" style={{ display: 'block' }}>
-                  {/* Grid lines */}
-                  <line x1="0" y1="12" x2="100" y2="12" stroke="#1a1a22" strokeWidth="0.5"/>
-                  <line x1="0" y1="24" x2="100" y2="24" stroke="#1a1a22" strokeWidth="0.5"/>
-                  <line x1="0" y1="36" x2="100" y2="36" stroke="#1a1a22" strokeWidth="0.5"/>
-                  {/* Stock line - debt climbing (going up is bad) */}
-                  <path d="M0,42 L5,40 L10,41 L15,38 L20,39 L25,36 L30,37 L35,34 L40,35 L45,32 L50,30 L55,31 L60,28 L65,26 L70,27 L75,24 L80,22 L85,20 L90,18 L95,14 L100,10" 
-                        fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  {/* End dot */}
-                  <circle cx="100" cy="10" r="3" fill="#ef4444">
-                    <animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite"/>
-                  </circle>
-                </svg>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}>
-                  <span style={{ color: '#ef4444', fontSize: '14px' }}>▲</span>
-                  <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '600' }}>CLIMBING</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '12px', height: '3px', background: '#22c55e', borderRadius: '2px' }}></div>
+                  <span style={{ fontSize: '11px', color: '#22c55e' }}>Trump Gained: +${wealthGain.toFixed(1)}B</span>
                 </div>
               </div>
             </div>
             
-            <div style={{ marginTop: '16px', padding: '12px 14px', background: 'rgba(239,68,68,0.05)', borderRadius: '8px', fontSize: '12px', color: '#888', textAlign: 'center' }}>
-              For every <span style={{ color: '#22c55e', fontWeight: '600' }}>$1</span> Trump gained, debt increased by <span style={{ color: '#ef4444', fontWeight: '700' }}>${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}</span>
+            {/* Stats comparison */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.15)' }}>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase' }}>National Debt Added</div>
+                <div style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>Since Jan 20, 2025</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(34,197,94,0.06)', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.15)' }}>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase' }}>Trump's Wealth Gain</div>
+                <div style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>+{wealthGainPercent}% since Jan 2024</div>
+              </div>
+            </div>
+            
+            <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.05)', borderRadius: '8px', fontSize: '12px', color: '#888', textAlign: 'center' }}>
+              For every <span style={{ color: '#22c55e', fontWeight: '600' }}>$1</span> Trump gained, the national debt increased by <span style={{ color: '#ef4444', fontWeight: '700' }}>${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}</span>
             </div>
           </Card>
 
@@ -353,11 +331,11 @@ function App() {
 
           {/* Golf Summary */}
           <Card glow="#eab308">
-            <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Taxpayer-Funded Golf</div>
-            <div style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: '700', color: '#eab308', marginBottom: '8px' }}>{fmt(selfDealingFromGolf)}</div>
-            <div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '16px' }}>{totalTrips} trips to Trump properties</div>
+            <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Taxpayer-Funded Golf (2025)</div>
+            <div style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: '700', color: '#eab308', marginBottom: '8px' }}>$110.6M</div>
+            <div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '16px' }}>88 golf club visits • 25% of days in office</div>
             <div style={{ padding: '14px 16px', background: 'rgba(234,179,8,0.08)', borderRadius: '10px', border: '1px solid rgba(234,179,8,0.15)', fontSize: '13px', color: '#a8a8b8', lineHeight: 1.6 }}>
-              <strong style={{ color: '#eab308' }}>Why it matters:</strong> Secret Service pays Trump's resorts. Money goes directly to his pocket.
+              <strong style={{ color: '#eab308' }}>Why it matters:</strong> Each Mar-a-Lago trip costs ~$3.4M. Secret Service pays Trump's resorts directly.
             </div>
             <div style={{ marginTop: '16px' }}>
               <ActionLink onClick={() => handleTabClick('money')} color="#eab308">Full Breakdown →</ActionLink>
@@ -579,36 +557,80 @@ function App() {
           <Card glow="#eab308" style={{ marginBottom: '16px' }}>
             <div style={{ fontSize: '12px', color: '#eab308', fontWeight: '600', marginBottom: '12px' }}>💡 KEY INSIGHT</div>
             <p style={{ fontSize: '15px', color: '#e8e8ed', lineHeight: 1.7, margin: 0 }}>
-              When Trump golfs at Mar-a-Lago, taxpayers pay for Secret Service rooms <strong style={{ color: '#eab308' }}>at a resort he owns</strong>. This money goes <strong style={{ color: '#eab308' }}>directly into his bank account</strong>.
+              When Trump golfs at Mar-a-Lago, taxpayers pay ~$3.4 million per trip for Secret Service, Coast Guard, and Air Force One. The Secret Service pays for rooms <strong style={{ color: '#eab308' }}>at resorts Trump owns</strong>, putting taxpayer money directly into his pocket.
             </p>
           </Card>
           
-          <Card style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '14px', color: '#eab308', fontWeight: '600', marginBottom: '16px' }}>Golf Self-Dealing (Term to Date)</div>
-            {[
-              { l: 'Golf trips to Trump properties', v: totalTrips, s: 'CREW' },
-              { l: 'Total property visits', v: golf.propertyVisits2025 || 129, s: 'CREW' },
-              { l: 'Est. cost per trip', v: fmt(selfDealing.revenuePerTrip || 60000), s: 'GAO' },
-            ].map((r, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', color: '#888' }}>{r.l}</span>
-                <span style={{ fontSize: '13px' }}><span style={{ color: '#eab308', fontWeight: '600' }}>{r.v}</span> <span style={{ color: '#4a4a5a', fontSize: '10px' }}>({r.s})</span></span>
-              </div>
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(234,179,8,0.1)', borderRadius: '10px', marginTop: '8px' }}>
-              <span style={{ fontWeight: '600', color: '#fff' }}>Est. to Trump's pocket</span>
-              <span style={{ fontSize: '20px', fontWeight: '700', color: '#eab308' }}>{fmt(selfDealingFromGolf)}</span>
+          {/* Golf Costs - The Big Picture */}
+          <Card glow="#dc2626" style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '16px' }}>⛳</span>
+              <span style={{ fontSize: '14px', color: '#fff', fontWeight: '600' }}>Taxpayer-Funded Golf (2025)</span>
             </div>
+            <div style={{ fontSize: '42px', fontWeight: '700', color: '#ef4444', marginBottom: '8px' }}>$110.6M</div>
+            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>Estimated total cost for 88 golf club visits in 2025</div>
+            
+            <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
+              {[
+                { l: 'Golf club visits in 2025', v: '88', note: '25% of days in office' },
+                { l: 'Total property visits', v: '99', note: 'Includes non-golf visits' },
+                { l: 'Cost per Mar-a-Lago trip', v: '$3.4M', note: 'GAO 2019 report' },
+                { l: 'Cost per Bedminster trip', v: '$1.1M', note: 'Smaller aircraft' },
+                { l: 'Scotland trip (July 2025)', v: '~$10M', note: '5-day trip' },
+              ].map((r, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                  <div>
+                    <span style={{ fontSize: '13px', color: '#a8a8b8' }}>{r.l}</span>
+                    {r.note && <span style={{ fontSize: '10px', color: '#4a4a5a', marginLeft: '8px' }}>({r.note})</span>}
+                  </div>
+                  <span style={{ fontSize: '14px', color: '#ef4444', fontWeight: '700' }}>{r.v}</span>
+                </div>
+              ))}
+            </div>
+            
+            <div style={{ padding: '14px 16px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.2)', marginBottom: '12px' }}>
+              <div style={{ fontSize: '11px', color: '#fca5a5', marginBottom: '4px' }}>First Term Comparison</div>
+              <div style={{ fontSize: '13px', color: '#d4d4dc' }}>Trump spent <strong style={{ color: '#ef4444' }}>$151.5M</strong> on golf over 4 years in his first term. He's on pace to exceed <strong style={{ color: '#ef4444' }}>$300M</strong> this term.</div>
+            </div>
+            
+            <a href="https://www.citizensforethics.org/reports-investigations/crew-investigations/secret-service-has-spent-nearly-100k-at-trump-properties/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#6b6b7b', textDecoration: 'underline' }}>Source: CREW, GAO, HuffPost →</a>
+          </Card>
+          
+          {/* Secret Service Payments TO Trump */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #eab308' }}>
+            <div style={{ fontSize: '14px', color: '#eab308', fontWeight: '600', marginBottom: '12px' }}>Secret Service Payments to Trump Businesses</div>
+            <p style={{ fontSize: '13px', color: '#a8a8b8', marginBottom: '16px', lineHeight: 1.6 }}>
+              These are payments from Secret Service directly to Trump's hotels and resorts - money that goes into his pocket.
+            </p>
+            <div style={{ display: 'grid', gap: '8px', marginBottom: '12px' }}>
+              {[
+                { l: 'Second term (so far)', v: '$100,000+', note: 'First months of 2025' },
+                { l: 'First term total', v: '~$2M', note: '2017-2021' },
+                { l: 'Charged per night', v: 'Up to $800+', note: 'Above gov rate' },
+                { l: 'Bedminster cottage rental', v: '$17,000/mo', note: 'For Secret Service' },
+              ].map((r, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                  <div>
+                    <span style={{ fontSize: '13px', color: '#a8a8b8' }}>{r.l}</span>
+                    {r.note && <span style={{ fontSize: '10px', color: '#4a4a5a', marginLeft: '8px' }}>({r.note})</span>}
+                  </div>
+                  <span style={{ fontSize: '14px', color: '#eab308', fontWeight: '700' }}>{r.v}</span>
+                </div>
+              ))}
+            </div>
+            <a href="https://www.citizensforethics.org/reports-investigations/crew-investigations/the-secret-service-spent-nearly-2-million-at-trump-properties/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#6b6b7b', textDecoration: 'underline' }}>Source: CREW FOIA Records →</a>
           </Card>
 
-          <Card style={{ marginBottom: '16px' }}>
+          {/* Crypto */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #22c55e' }}>
             <div style={{ fontSize: '14px', color: '#22c55e', fontWeight: '600', marginBottom: '12px' }}>Crypto Ventures</div>
             <div style={{ fontSize: '36px', fontWeight: '700', color: '#22c55e', marginBottom: '8px' }}>{fmt(selfDealing.cryptoFees || 427000000)}</div>
-            <div style={{ fontSize: '13px', color: '#6b6b7b' }}>Trading fees from $TRUMP memecoin + World Liberty Financial</div>
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Financial Times • Bloomberg</div>
+            <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '12px' }}>Trading fees from $TRUMP memecoin + World Liberty Financial</div>
+            <a href="https://www.ft.com/content/trump-crypto" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#6b6b7b', textDecoration: 'underline' }}>Source: Financial Times, Bloomberg →</a>
           </Card>
 
-          <Card>
+          {/* Israel Aid */}
+          <Card style={{ borderLeft: '3px solid #60a5fa' }}>
             <div style={{ fontSize: '14px', color: '#60a5fa', fontWeight: '600', marginBottom: '16px' }}>"America First" vs Israel Military Aid</div>
             <div style={{ fontSize: '36px', fontWeight: '700', color: '#60a5fa', marginBottom: '8px' }}>$21.7B+</div>
             <div style={{ fontSize: '13px', color: '#6b6b7b', marginBottom: '16px' }}>U.S. military aid since Oct 2023</div>
@@ -622,52 +644,126 @@ function App() {
                 <span style={{ fontSize: '13px', color: '#60a5fa', fontWeight: '600' }}>{r.v}</span>
               </div>
             ))}
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Brown University • State Dept • Quincy Institute</div>
+            <a href="https://watson.brown.edu/costsofwar/costs/economic/budget" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#6b6b7b', textDecoration: 'underline' }}>Source: Brown University Costs of War Project →</a>
           </Card>
         </>}
 
         {/* ICE */}
-        {activeTab === 'ice' && <>
-          <PageHeader title="Citizens Killed by Federal Agents" subtitle="Documented incidents with sources" />
+        {activeTab === 'ice' && (() => {
+          // Filter out invalid entries (no name or empty name)
+          const validVictims = iceVictims.filter(v => v.name && v.name.trim() && v.name.trim() !== '');
+          const shootingVictims = validVictims.filter(v => v.details?.toLowerCase().includes('shot') || v.details?.toLowerCase().includes('shooting'));
+          const usCitizenVictims = validVictims.filter(v => v.citizenship === 'US Citizen');
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
-            {[
-              { v: iceVictims.filter(x => x.citizenship === 'US Citizen').length, l: 'US Citizens', c: '#dc2626' },
-              { v: `${iceStats.totalShootings || 27}+`, l: 'Shootings', c: '#ef4444' },
-              { v: iceStats.shootingDeaths || 8, l: 'Deaths', c: '#f87171' },
-              { v: iceStats.detentionDeaths2025 || 32, l: '2025 Detention', c: '#fca5a5' }
-            ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '16px', background: 'rgba(220,38,38,0.08)', borderRadius: '12px', border: '1px solid rgba(220,38,38,0.2)' }}>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: s.c }}>{s.v}</div>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>{s.l}</div>
+          // Helper for age display
+          const formatAge = (age) => (!age || age === 0) ? 'Unknown' : age;
+          
+          return <>
+            <PageHeader title="Federal Agent Violence" subtitle="Shootings and deaths involving ICE, Border Patrol, and CBP" />
+            
+            {/* Explanation */}
+            <Card style={{ marginBottom: '24px', borderLeft: '3px solid #f59e0b' }}>
+              <div style={{ fontSize: '13px', color: '#d4d4dc', lineHeight: 1.7 }}>
+                This page tracks <strong style={{ color: '#fca5a5' }}>shootings by federal immigration agents</strong> (ICE, Border Patrol, CBP) and <strong style={{ color: '#fca5a5' }}>deaths in immigration detention</strong>. These are separate categories—shootings occur during enforcement operations, while detention deaths occur in custody facilities.
               </div>
-            ))}
-          </div>
-
-          <div style={{ padding: '14px 16px', background: 'rgba(220,38,38,0.08)', borderRadius: '10px', marginBottom: '24px', fontSize: '12px', color: '#fca5a5' }}>
-            <strong>Context:</strong> 2025 had highest ICE detention deaths since 2004.
-          </div>
-
-          {iceVictims.map(v => (
-            <Card key={v.id} style={{ marginBottom: '16px', borderLeft: '3px solid #dc2626' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: '0 0 4px 0' }}>{v.name}</h3>
-              <div style={{ fontSize: '12px', color: '#fca5a5', marginBottom: '4px' }}>Age {v.age} • {v.citizenship} • {v.agency}</div>
-              <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>{v.date} • {v.location}</div>
-              <div style={{ padding: '14px', background: '#0a0a0f', borderRadius: '10px', marginBottom: '12px', fontSize: '13px', color: '#d4d4dc', lineHeight: 1.6 }}>{v.details}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div style={{ padding: '12px', background: 'rgba(220,38,38,0.08)', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '9px', color: '#fca5a5', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>OFFICIAL</div>
-                  <div style={{ fontSize: '11px', color: '#a8a8b8', lineHeight: 1.5 }}>{v.officialResponse}</div>
-                </div>
-                <div style={{ padding: '12px', background: 'rgba(34,197,94,0.08)', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '9px', color: '#86efac', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>WITNESS</div>
-                  <div style={{ fontSize: '11px', color: '#a8a8b8', lineHeight: 1.5 }}>{v.witnessAccount}</div>
-                </div>
-              </div>
-              <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {(v.sources || []).join(' • ')}</div>
             </Card>
-          ))}
-        </>}
+
+            {/* Shooting Stats */}
+            <Card glow="#dc2626" style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#dc2626', animation: 'pulse 2s infinite' }} />
+                <span style={{ fontSize: '14px', color: '#fff', fontWeight: '600' }}>Shootings by Federal Agents</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(220,38,38,0.1)', borderRadius: '10px' }}>
+                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#dc2626' }}>{iceStats.totalShootings || 27}+</div>
+                  <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Total Shootings</div>
+                  <div style={{ fontSize: '9px', color: '#4a4a5a', marginTop: '2px' }}>Since Jan 2025</div>
+                </div>
+                <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(220,38,38,0.1)', borderRadius: '10px' }}>
+                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#ef4444' }}>{iceStats.shootingDeaths || 8}</div>
+                  <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Killed</div>
+                  <div style={{ fontSize: '9px', color: '#4a4a5a', marginTop: '2px' }}>By gunfire</div>
+                </div>
+                <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(220,38,38,0.1)', borderRadius: '10px' }}>
+                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#f87171' }}>{usCitizenVictims.length}</div>
+                  <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>US Citizens</div>
+                  <div style={{ fontSize: '9px', color: '#4a4a5a', marginTop: '2px' }}>Shot or killed</div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Detention Deaths */}
+            <Card style={{ marginBottom: '24px', borderLeft: '3px solid #f97316' }}>
+              <div style={{ fontSize: '14px', color: '#f97316', fontWeight: '600', marginBottom: '12px' }}>Deaths in Immigration Detention</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ padding: '14px', background: 'rgba(249,115,22,0.1)', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#f97316' }}>{iceStats.detentionDeaths2025 || 32}</div>
+                  <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>Deaths in 2025</div>
+                </div>
+                <div style={{ padding: '14px', background: 'rgba(249,115,22,0.1)', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#fb923c' }}>{iceStats.detentionDeaths2026 || 6}</div>
+                  <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '4px' }}>Deaths in 2026</div>
+                </div>
+              </div>
+              <div style={{ fontSize: '11px', color: '#888', marginTop: '12px', padding: '10px 12px', background: '#0a0a0f', borderRadius: '6px' }}>
+                <strong style={{ color: '#f97316' }}>Note:</strong> 2025 had the highest ICE detention deaths since 2004. December 2025 was the deadliest month on record.
+              </div>
+            </Card>
+
+            {/* Section header for individual incidents */}
+            <div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #1e1e28' }}>
+              <span style={{ color: '#fff', fontWeight: '600' }}>Documented Shooting Incidents</span> • {validVictims.length} on record
+            </div>
+
+            {/* Individual Victim Cards */}
+            {validVictims.map(v => (
+              <Card key={v.id} style={{ marginBottom: '16px', borderLeft: `3px solid ${v.citizenship === 'US Citizen' ? '#dc2626' : '#f97316'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>{v.name}</h3>
+                  {v.citizenship === 'US Citizen' && (
+                    <span style={{ fontSize: '9px', fontWeight: '600', padding: '4px 8px', borderRadius: '4px', background: 'rgba(220,38,38,0.2)', color: '#fca5a5' }}>US CITIZEN</span>
+                  )}
+                </div>
+                <div style={{ fontSize: '12px', color: '#a8a8b8', marginBottom: '4px' }}>
+                  {formatAge(v.age) !== 'Unknown' && <>Age {formatAge(v.age)} • </>}
+                  {v.citizenship && v.citizenship !== 'Unknown' && <>{v.citizenship} • </>}
+                  {v.agency}
+                </div>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '12px' }}>
+                  {v.date}{v.location && <> • {v.location}</>}
+                </div>
+                {v.details && (
+                  <div style={{ padding: '14px', background: '#0a0a0f', borderRadius: '10px', marginBottom: '12px', fontSize: '13px', color: '#d4d4dc', lineHeight: 1.6 }}>{v.details}</div>
+                )}
+                {(v.officialResponse || v.witnessAccount) && (
+                  <div style={{ display: 'grid', gridTemplateColumns: v.officialResponse && v.witnessAccount ? '1fr 1fr' : '1fr', gap: '10px' }}>
+                    {v.officialResponse && (
+                      <div style={{ padding: '12px', background: 'rgba(220,38,38,0.08)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '9px', color: '#fca5a5', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>OFFICIAL STATEMENT</div>
+                        <div style={{ fontSize: '11px', color: '#a8a8b8', lineHeight: 1.5 }}>{v.officialResponse}</div>
+                      </div>
+                    )}
+                    {v.witnessAccount && (
+                      <div style={{ padding: '12px', background: 'rgba(34,197,94,0.08)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '9px', color: '#86efac', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.5px' }}>WITNESS / OTHER ACCOUNT</div>
+                        <div style={{ fontSize: '11px', color: '#a8a8b8', lineHeight: 1.5 }}>{v.witnessAccount}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {v.sources && v.sources.length > 0 && (
+                  <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {v.sources.join(' • ')}</div>
+                )}
+              </Card>
+            ))}
+
+            {/* Data source */}
+            <div style={{ fontSize: '10px', color: '#4a4a5a', textAlign: 'center', marginTop: '24px' }}>
+              Data compiled from: Wikipedia • NPR • AP News • ACLU • Vera Institute • Local news reports
+            </div>
+          </>;
+        })()}
 
         {/* SOURCES */}
         {activeTab === 'sources' && <>
