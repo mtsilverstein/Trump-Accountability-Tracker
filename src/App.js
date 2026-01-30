@@ -78,13 +78,14 @@ function App() {
   );
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'overview', label: 'Home', icon: '📊' },
     { id: 'promises', label: 'Promises', icon: '❌' },
-    { id: 'constitution', label: 'Constitution', icon: '📜' },
-    { id: 'lawsuits', label: 'Lawsuits', icon: '⚖️' },
+    { id: 'constitution', label: 'Const.', icon: '📜' },
+    { id: 'lawsuits', label: 'Legal', icon: '⚖️' },
     { id: 'money', label: 'Money', icon: '💰' },
     { id: 'ice', label: 'ICE', icon: '⚠️' },
-    { id: 'action', label: 'Act Now', icon: '📞' },
+    { id: 'polls', label: 'Polls', icon: '📉' },
+    { id: 'action', label: 'Act', icon: '📞' },
   ];
 
   const Card = ({ children, style, glow }) => (
@@ -113,20 +114,20 @@ function App() {
       style={{
         flex: '1 1 0',
         minWidth: '0',
-        padding: '12px 4px',
+        padding: '10px 2px',
         background: 'transparent',
         border: 'none',
         borderBottom: active ? '2px solid #ef4444' : '2px solid transparent',
         color: active ? '#fff' : '#6b6b7b',
         cursor: 'pointer',
-        fontSize: '9px',
+        fontSize: '8px',
         fontWeight: '600',
         textAlign: 'center',
         fontFamily: 'inherit',
         touchAction: 'manipulation',
       }}
     >
-      <div style={{ fontSize: '16px', marginBottom: '4px' }}>{icon}</div>
+      <div style={{ fontSize: '14px', marginBottom: '2px' }}>{icon}</div>
       {label}
     </button>
   );
@@ -235,52 +236,40 @@ function App() {
             </Card>
           </div>
 
-          {/* The Contrast - Proportional Visualization */}
-          <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)' }}>
-            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '20px', fontWeight: '600', textAlign: 'center' }}>THE CONTRAST</div>
+          {/* Trump's Personal Enrichment - THE MAIN STORY */}
+          <Card style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #13131a 0%, #0f0f14 100%)', border: '1px solid rgba(34,197,94,0.3)' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#22c55e', marginBottom: '16px', fontWeight: '600', textAlign: 'center' }}>TRUMP'S PERSONAL ENRICHMENT</div>
             
-            {/* The key ratio - big and clear */}
-            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{ fontSize: '14px', color: '#6b6b7b', marginBottom: '8px' }}>For every $1 Trump gained in wealth...</div>
-              <div style={{ fontSize: 'clamp(48px, 10vw, 64px)', fontWeight: '800', color: '#ef4444', lineHeight: 1 }}>
-                ${Math.round(debtSinceInauguration / (wealthGain * 1e9)).toLocaleString()}
+            {/* Main wealth gain */}
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div style={{ fontSize: 'clamp(48px, 10vw, 64px)', fontWeight: '800', color: '#22c55e', lineHeight: 1 }}>
+                +${wealthGain.toFixed(1)}B
               </div>
-              <div style={{ fontSize: '14px', color: '#6b6b7b', marginTop: '8px' }}>was added to the national debt</div>
+              <div style={{ fontSize: '14px', color: '#6b6b7b', marginTop: '8px' }}>Net worth gain since taking office</div>
+              <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>+{wealthGainPercent}% increase</div>
             </div>
 
-            {/* Proportional bar visualization */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '11px', color: '#6b6b7b', marginBottom: '8px' }}>SCALE COMPARISON (if Trump's gain = 1 pixel)</div>
-              <div style={{ position: 'relative', background: '#0a0a0f', borderRadius: '8px', padding: '16px', overflow: 'hidden' }}>
-                {/* Trump's wealth - tiny green bar */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <div style={{ width: '4px', height: '24px', background: '#22c55e', borderRadius: '2px', flexShrink: 0 }}></div>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600' }}>Trump's Gain: +${wealthGain.toFixed(1)}B</div>
-                  </div>
-                </div>
-                {/* Debt - massive red bar that extends off screen */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '100%', height: '24px', background: 'linear-gradient(90deg, #ef4444 0%, #ef4444 95%, transparent 100%)', borderRadius: '2px', position: 'relative' }}>
-                    <div style={{ position: 'absolute', right: '-20px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px' }}>→</div>
-                  </div>
-                </div>
-                <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: '600', marginTop: '8px' }}>Debt Added: +{fmt(debtSinceInauguration)} <span style={{ color: '#6b6b7b', fontWeight: '400' }}>(bar extends {Math.round(debtSinceInauguration / (wealthGain * 1e9))}x further)</span></div>
+            {/* Comparison that makes sense */}
+            <div style={{ display: 'grid', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ padding: '14px 16px', background: '#0a0a0f', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#6b6b7b' }}>Presidential salary he "donated"</span>
+                <span style={{ fontSize: '14px', color: '#4a4a5a', fontWeight: '600' }}>$400K/year</span>
+              </div>
+              <div style={{ padding: '14px 16px', background: '#0a0a0f', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#6b6b7b' }}>What he gained instead</span>
+                <span style={{ fontSize: '14px', color: '#22c55e', fontWeight: '600' }}>${wealthGain.toFixed(1)}B</span>
+              </div>
+              <div style={{ padding: '14px 16px', background: 'rgba(34,197,94,0.1)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(34,197,94,0.2)' }}>
+                <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: '500' }}>That's equivalent to...</span>
+                <span style={{ fontSize: '14px', color: '#22c55e', fontWeight: '700' }}>{Math.round((wealthGain * 1e9) / 400000).toLocaleString()} years of salary</span>
               </div>
             </div>
-            
-            {/* Stats comparison */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(239,68,68,0.06)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.15)' }}>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase' }}>National Debt Added</div>
-                <div style={{ fontSize: 'clamp(20px, 4vw, 26px)', fontWeight: '700', color: '#ef4444', fontFamily: 'JetBrains Mono, monospace' }}>+{fmt(debtSinceInauguration)}</div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>~${Math.round(debtSinceInauguration / 330000000).toLocaleString()} per American</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(34,197,94,0.06)', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.15)' }}>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginBottom: '6px', textTransform: 'uppercase' }}>Trump's Wealth Gain</div>
-                <div style={{ fontSize: 'clamp(20px, 4vw, 26px)', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B</div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>+{wealthGainPercent}% since Jan 2024</div>
-              </div>
+
+            <div style={{ fontSize: '11px', color: '#6b6b7b', textAlign: 'center' }}>
+              Most of this came from crypto ventures launched <em>while in office</em>
+            </div>
+            <div style={{ marginTop: '12px' }}>
+              <ActionLink onClick={() => handleTabClick('money')} color="#22c55e">See Full Breakdown →</ActionLink>
             </div>
           </Card>
 
@@ -321,6 +310,30 @@ function App() {
               ))}
             </div>
             <ActionLink onClick={() => handleTabClick('constitution')} color="#a855f7">View All Concerns →</ActionLink>
+          </Card>
+
+          {/* Polls Summary */}
+          <Card glow="#3b82f6" style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500' }}>Approval Rating</span>
+              <span style={{ fontSize: '9px', color: '#3b82f6', background: 'rgba(59,130,246,0.15)', padding: '4px 10px', borderRadius: '4px', fontWeight: '600' }}>JAN 2026</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px' }}>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: '#ef4444' }}>39%</div>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Approve</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(107,107,123,0.1)', borderRadius: '10px' }}>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: '#6b6b7b' }}>56%</div>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Disapprove</div>
+              </div>
+            </div>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', fontSize: '12px', color: '#888' }}>
+              <strong style={{ color: '#ef4444' }}>58%</strong> say ICE has gone "too far" • <strong style={{ color: '#ef4444' }}>54%</strong> say country worse off
+            </div>
+            <div style={{ marginTop: '12px' }}>
+              <ActionLink onClick={() => handleTabClick('polls')} color="#3b82f6">All Poll Data →</ActionLink>
+            </div>
           </Card>
 
           {/* Golf Summary */}
@@ -481,41 +494,79 @@ function App() {
 
         {/* LAWSUITS */}
         {activeTab === 'lawsuits' && <>
-          <PageHeader title="Legal Challenges" subtitle="Lawsuits against Trump and his administration" />
+          <PageHeader title="Legal Challenges" subtitle="Unprecedented legal battles against the administration" />
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
             <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(168,85,247,0.08)', borderRadius: '12px', border: '1px solid rgba(168,85,247,0.2)' }}>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: '#a855f7' }}>{lawsuits.length || '100+'}</div>
-              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Active Cases</div>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#a855f7' }}>358+</div>
+              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Lawsuits in 2025</div>
             </div>
             <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(59,130,246,0.08)', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: '#3b82f6' }}>{lawsuits.filter(l => l.status === 'Ruling' || l.ruling).length || '—'}</div>
-              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Rulings Issued</div>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#3b82f6' }}>24</div>
+              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Supreme Court Emergency Cases</div>
             </div>
           </div>
 
-          <div style={{ padding: '14px 16px', background: 'rgba(168,85,247,0.08)', borderRadius: '10px', marginBottom: '24px', fontSize: '12px', color: '#c4b5fd', border: '1px solid rgba(168,85,247,0.2)' }}>
-            <strong>Note:</strong> This section tracks legal challenges to Trump administration policies, executive orders, and actions. Data updates automatically from news sources.
-          </div>
+          <Card style={{ marginBottom: '24px', borderLeft: '3px solid #ef4444' }}>
+            <div style={{ fontSize: '13px', color: '#d4d4dc', lineHeight: 1.7 }}>
+              <strong style={{ color: '#ef4444' }}>Historic:</strong> More lawsuits were filed against the Trump administration in 2025 than any first year of any presidency in history. According to SCOTUSblog, "Never before has the court been asked to rule on the legality of so many presidential actions in such a short period of time."
+            </div>
+            <a href="https://www.scotusblog.com/2026/01/looking-back-at-2025-the-supreme-court-and-the-trump-administration/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '10px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: SCOTUSblog →</a>
+          </Card>
 
-          {lawsuits.length === 0 ? (
-            <Card>
-              <p style={{ color: '#6b6b7b', textAlign: 'center', margin: 0 }}>
-                Lawsuit tracking is being set up. According to NYT, over 100 lawsuits have been filed against the Trump administration in 2025-2026.
-              </p>
-              <div style={{ marginTop: '16px', padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px' }}>
-                <div style={{ fontSize: '12px', color: '#a855f7', marginBottom: '8px', fontWeight: '600' }}>Key Areas of Litigation:</div>
-                <ul style={{ fontSize: '13px', color: '#a8a8b8', margin: 0, paddingLeft: '18px', lineHeight: 1.8 }}>
-                  <li>Immigration enforcement & deportations</li>
-                  <li>Executive order overreach</li>
-                  <li>Due process violations</li>
-                  <li>First Amendment challenges</li>
-                  <li>Environmental rollbacks</li>
-                  <li>Federal employee firings</li>
-                </ul>
+          <Card style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#a855f7', fontWeight: '600', marginBottom: '16px' }}>Major Areas of Litigation</div>
+            
+            {[
+              { area: 'Birthright Citizenship', status: 'Blocked', desc: 'Multiple courts blocked EO to end birthright citizenship. Supreme Court hearing expected Feb-Apr 2026.', color: '#22c55e' },
+              { area: 'Federal Workforce Cuts', status: 'Mixed', desc: 'Probationary employee firings ruled illegal. DOGE cuts face multiple challenges.', color: '#f59e0b' },
+              { area: 'Tariffs (IEEPA)', status: 'Pending', desc: 'Major case on Trump\'s use of emergency powers for tariffs. Supreme Court arguments underway.', color: '#3b82f6' },
+              { area: 'Immigration Enforcement', status: 'Ongoing', desc: '100+ lawsuits on F-1 visa revocations alone. Minneapolis suing over Operation Metro Surge.', color: '#ef4444' },
+              { area: 'Transgender Military Ban', status: 'Blocked', desc: 'Preliminary injunction granted. Administration appealed to Supreme Court.', color: '#a855f7' },
+              { area: 'DEI Programs', status: 'Mixed', desc: 'Federal funding freezes temporarily blocked. Multiple state AG lawsuits pending.', color: '#eab308' },
+            ].map((item, i) => (
+              <div key={i} style={{ padding: '14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '10px', borderLeft: `3px solid ${item.color}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '14px', color: '#fff', fontWeight: '600' }}>{item.area}</span>
+                  <span style={{ fontSize: '10px', fontWeight: '600', padding: '3px 8px', borderRadius: '4px', background: `${item.color}20`, color: item.color }}>{item.status}</span>
+                </div>
+                <p style={{ fontSize: '12px', color: '#a8a8b8', margin: 0, lineHeight: 1.5 }}>{item.desc}</p>
               </div>
-            </Card>
-          ) : lawsuits.map(l => (
+            ))}
+          </Card>
+
+          <Card style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#ef4444', fontWeight: '600', marginBottom: '16px' }}>Supreme Court Record (2025)</div>
+            <div style={{ padding: '14px', background: 'rgba(239,68,68,0.06)', borderRadius: '8px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>
+                The Supreme Court overwhelmingly sided with the Trump administration in 2025, ruling in favor in 23 of 24 emergency docket cases. Only Justice Jackson voted against the administration in every case.
+              </p>
+            </div>
+            <div style={{ fontSize: '12px', color: '#6b6b7b', lineHeight: 1.7 }}>
+              The lone exception: <em>Margolin v. National Association of Immigration Judges</em> — the only case where Justices Thomas and Alito voted against the administration.
+            </div>
+          </Card>
+
+          <Card>
+            <div style={{ fontSize: '14px', color: '#3b82f6', fontWeight: '600', marginBottom: '16px' }}>Resources</div>
+            <div style={{ display: 'grid', gap: '10px' }}>
+              <a href="https://www.justsecurity.org/107087/tracker-litigation-legal-challenges-trump-administration/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '12px 14px', background: 'rgba(59,130,246,0.1)', borderRadius: '8px', textDecoration: 'none' }}>
+                <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>Just Security Litigation Tracker</div>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '2px' }}>Comprehensive database of all legal challenges</div>
+              </a>
+              <a href="https://www.lawfaremedia.org/projects-series/trials-of-the-trump-administration/tracking-trump-administration-litigation" target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '12px 14px', background: 'rgba(59,130,246,0.1)', borderRadius: '8px', textDecoration: 'none' }}>
+                <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>Lawfare Trump Administration Tracker</div>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '2px' }}>Detailed case analysis and updates</div>
+              </a>
+              <a href="https://ballotpedia.org/Multistate_lawsuits_against_the_federal_government_during_the_Trump_administration,_2025-2026" target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '12px 14px', background: 'rgba(59,130,246,0.1)', borderRadius: '8px', textDecoration: 'none' }}>
+                <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>Ballotpedia Multistate Lawsuits</div>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '2px' }}>State-level legal challenges</div>
+              </a>
+            </div>
+          </Card>
+        </>}
+
+        {lawsuits.length > 0 && activeTab === 'lawsuits-old' && lawsuits.map(l => (
             <Card key={l.id} style={{ marginBottom: '16px', borderLeft: '3px solid #a855f7' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: 0, flex: 1 }}>{l.title}</h3>
@@ -762,7 +813,7 @@ function App() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(220,38,38,0.1)', borderRadius: '10px' }}>
-                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#dc2626' }}>{iceStats.totalShootings || 27}+</div>
+                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#dc2626' }}>{iceStats.totalShootings || 30}+</div>
                   <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Total Shootings</div>
                   <div style={{ fontSize: '9px', color: '#4a4a5a', marginTop: '2px' }}>Since Jan 2025</div>
                 </div>
@@ -772,10 +823,13 @@ function App() {
                   <div style={{ fontSize: '9px', color: '#4a4a5a', marginTop: '2px' }}>By gunfire</div>
                 </div>
                 <div style={{ textAlign: 'center', padding: '16px 12px', background: 'rgba(220,38,38,0.1)', borderRadius: '10px' }}>
-                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#f87171' }}>{usCitizenVictims.length}</div>
+                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#f87171' }}>2</div>
                   <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>US Citizens</div>
-                  <div style={{ fontSize: '9px', color: '#4a4a5a', marginTop: '2px' }}>Shot or killed</div>
+                  <div style={{ fontSize: '9px', color: '#4a4a5a', marginTop: '2px' }}>Killed</div>
                 </div>
+              </div>
+              <div style={{ marginTop: '12px', padding: '10px 12px', background: '#0a0a0f', borderRadius: '6px', fontSize: '11px', color: '#888' }}>
+                <strong style={{ color: '#fca5a5' }}>Note:</strong> 5 US citizens have been shot total (2 killed: Renee Good, Alex Pretti). <a href="https://en.wikipedia.org/wiki/List_of_shootings_by_U.S._immigration_agents_in_the_second_Trump_administration" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>Wikipedia</a>
               </div>
             </Card>
 
@@ -969,6 +1023,143 @@ function App() {
               <li>Ask for the representative's position on the issue</li>
               <li>Calls are more impactful than emails</li>
             </ul>
+          </Card>
+        </>}
+
+        {/* POLLS */}
+        {activeTab === 'polls' && <>
+          <PageHeader title="Approval Ratings" subtitle="Public opinion tracking from major pollsters" />
+          
+          {/* Current Approval */}
+          <Card glow="#ef4444" style={{ marginBottom: '24px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '16px', fontWeight: '600', textAlign: 'center' }}>CURRENT APPROVAL (JAN 2026)</div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(239,68,68,0.08)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
+                <div style={{ fontSize: '48px', fontWeight: '800', color: '#ef4444', lineHeight: 1 }}>39%</div>
+                <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '8px' }}>Overall Approval</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>CNN/SSRS Jan 2026</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(34,197,94,0.08)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.2)' }}>
+                <div style={{ fontSize: '48px', fontWeight: '800', color: '#6b6b7b', lineHeight: 1 }}>56%</div>
+                <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '8px' }}>Disapproval</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>Civiqs Jan 28, 2026</div>
+              </div>
+            </div>
+
+            <div style={{ padding: '14px 16px', background: '#0a0a0f', borderRadius: '10px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>NET APPROVAL TREND</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ fontSize: '28px', fontWeight: '700', color: '#ef4444' }}>-12.9</div>
+                <div style={{ fontSize: '12px', color: '#6b6b7b' }}>
+                  Silver Bulletin average<br/>
+                  <span style={{ color: '#ef4444' }}>↓ Down from -12.0 last week</span>
+                </div>
+              </div>
+            </div>
+            
+            <a href="https://www.natesilver.net/p/trump-approval-ratings-nate-silver-bulletin" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: Silver Bulletin →</a>
+          </Card>
+
+          {/* Poll Comparison */}
+          <Card style={{ marginBottom: '24px' }}>
+            <div style={{ fontSize: '14px', color: '#fff', fontWeight: '600', marginBottom: '16px' }}>Recent Poll Results (Jan 2026)</div>
+            
+            {[
+              { pollster: 'Fox News', approve: 44, disapprove: 56, date: 'Jan 23-26', color: '#ef4444' },
+              { pollster: 'Emerson', approve: 41, disapprove: 50, date: 'Jan 2026', color: '#f97316' },
+              { pollster: 'CNN/SSRS', approve: 39, disapprove: 61, date: 'Jan 2026', color: '#eab308' },
+              { pollster: 'Marist', approve: 38, disapprove: 56, date: 'Jan 12-13', color: '#22c55e' },
+              { pollster: 'Reuters/Ipsos', approve: 38, disapprove: 58, date: 'Jan 2026', color: '#3b82f6' },
+              { pollster: 'Civiqs', approve: 39, disapprove: 56, date: 'Jan 28', color: '#a855f7' },
+            ].map((poll, i) => (
+              <div key={i} style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', color: '#a8a8b8', fontWeight: '500' }}>{poll.pollster}</span>
+                  <span style={{ fontSize: '10px', color: '#4a4a5a' }}>{poll.date}</span>
+                </div>
+                <div style={{ display: 'flex', height: '24px', borderRadius: '4px', overflow: 'hidden', background: '#0a0a0f' }}>
+                  <div style={{ width: `${poll.approve}%`, background: poll.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#fff' }}>{poll.approve}%</span>
+                  </div>
+                  <div style={{ width: `${poll.disapprove}%`, background: '#3a3a4a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#888' }}>{poll.disapprove}%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </Card>
+
+          {/* Key Findings */}
+          <Card style={{ marginBottom: '24px', borderLeft: '3px solid #f97316' }}>
+            <div style={{ fontSize: '14px', color: '#f97316', fontWeight: '600', marginBottom: '16px' }}>Key Findings</div>
+            
+            <div style={{ display: 'grid', gap: '12px' }}>
+              <div style={{ padding: '14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444', marginBottom: '4px' }}>54%</div>
+                <div style={{ fontSize: '12px', color: '#a8a8b8' }}>Say country is <strong>worse off</strong> than a year ago</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>Fox News, Jan 2026</div>
+              </div>
+              
+              <div style={{ padding: '14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#f97316', marginBottom: '4px' }}>58%</div>
+                <div style={{ fontSize: '12px', color: '#a8a8b8' }}>Say Trump has <strong>gone too far</strong> in using presidential power</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>CNN, Jan 2026</div>
+              </div>
+              
+              <div style={{ padding: '14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#eab308', marginBottom: '4px' }}>58%</div>
+                <div style={{ fontSize: '12px', color: '#a8a8b8' }}>Say ICE has <strong>gone too far</strong> in deportation crackdown</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>Reuters/Ipsos, Jan 2026</div>
+              </div>
+              
+              <div style={{ padding: '14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#22c55e', marginBottom: '4px' }}>37%</div>
+                <div style={{ fontSize: '12px', color: '#a8a8b8' }}>Say Trump puts <strong>country above personal gain</strong></div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>CNN, Jan 2026</div>
+              </div>
+              
+              <div style={{ padding: '14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#3b82f6', marginBottom: '4px' }}>29%</div>
+                <div style={{ fontSize: '12px', color: '#a8a8b8' }}>Independent approval (down from 48% at start of term)</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>CNN, Jan 2026</div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Immigration Approval */}
+          <Card style={{ marginBottom: '24px', borderLeft: '3px solid #dc2626' }}>
+            <div style={{ fontSize: '14px', color: '#dc2626', fontWeight: '600', marginBottom: '12px' }}>Immigration Approval (Record Low)</div>
+            <div style={{ fontSize: '36px', fontWeight: '700', color: '#dc2626', marginBottom: '8px' }}>39%</div>
+            <div style={{ fontSize: '12px', color: '#6b6b7b', marginBottom: '16px' }}>Down from 50% in Feb 2025 — record low for second term</div>
+            
+            <div style={{ padding: '12px 14px', background: 'rgba(220,38,38,0.08)', borderRadius: '8px', fontSize: '12px', color: '#fca5a5', lineHeight: 1.6 }}>
+              Poll conducted Jan 24-26, largely <strong>after</strong> Alex Pretti shooting. Immigration was Trump's strongest issue in the 2024 election.
+            </div>
+            <a href="https://www.aljazeera.com/news/2026/1/27/trumps-approval-on-immigration-falls-to-record-low-new-poll-finds" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '12px', fontSize: '11px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: Reuters/Ipsos via Al Jazeera →</a>
+          </Card>
+
+          {/* Historical Context */}
+          <Card>
+            <div style={{ fontSize: '14px', color: '#a855f7', fontWeight: '600', marginBottom: '16px' }}>Historical Context</div>
+            <div style={{ fontSize: '13px', color: '#a8a8b8', lineHeight: 1.7 }}>
+              <p style={{ margin: '0 0 12px 0' }}>Trump's current approval (~39-44%) is comparable to his first term at this point (-16.4 net approval), but notably lower than other second-term presidents one year in:</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '12px' }}>
+                <div style={{ textAlign: 'center', padding: '12px', background: '#0a0a0f', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '600', color: '#ef4444' }}>-12.9</div>
+                  <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Trump (2026)</div>
+                </div>
+                <div style={{ textAlign: 'center', padding: '12px', background: '#0a0a0f', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '600', color: '#3b82f6' }}>-8.5</div>
+                  <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Obama (2014)</div>
+                </div>
+                <div style={{ textAlign: 'center', padding: '12px', background: '#0a0a0f', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '600', color: '#22c55e' }}>-10.4</div>
+                  <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Bush (2006)</div>
+                </div>
+              </div>
+            </div>
+            <a href="https://www.nbcnews.com/politics/trump-administration/trumps-approval-rating-takes-hit-first-year-back-office-rcna253192" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '16px', fontSize: '11px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: NBC News →</a>
           </Card>
         </>}
       </main>

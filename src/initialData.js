@@ -80,12 +80,15 @@ export const INITIAL_DATA = {
   ],
   
   iceStats: {
-    totalShootings: 27,
+    totalShootings: 30,
     shootingDeaths: 8,
+    usCitizensKilled: 2,
+    usCitizensShot: 5,
     detentionDeaths2025: 32,
     detentionDeaths2026: 6,
-    note: 'December 2025 was deadliest month on record',
-    source: 'Wikipedia / ACLU / Vera Institute / AILA',
+    note: 'December 2025 was deadliest month on record. 2025 had highest ICE detention deaths since 2004.',
+    source: 'Wikipedia / ACLU / Vera Institute / NBC News / PBS',
+    sourceUrl: 'https://en.wikipedia.org/wiki/List_of_shootings_by_U.S._immigration_agents_in_the_second_Trump_administration',
   },
   
   brokenPromises: [
