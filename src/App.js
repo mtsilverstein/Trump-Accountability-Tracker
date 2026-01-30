@@ -566,36 +566,6 @@ function App() {
           </Card>
         </>}
 
-        {lawsuits.length > 0 && activeTab === 'lawsuits-old' && lawsuits.map(l => (
-            <Card key={l.id} style={{ marginBottom: '16px', borderLeft: '3px solid #a855f7' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: 0, flex: 1 }}>{l.title}</h3>
-                <span style={{ 
-                  fontSize: '10px', fontWeight: '600', padding: '4px 10px', borderRadius: '4px', marginLeft: '12px',
-                  background: l.status === 'Ruling' ? 'rgba(34,197,94,0.2)' : l.status === 'Dismissed' ? 'rgba(239,68,68,0.2)' : 'rgba(168,85,247,0.2)',
-                  color: l.status === 'Ruling' ? '#22c55e' : l.status === 'Dismissed' ? '#ef4444' : '#a855f7'
-                }}>{l.status}</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px', fontSize: '12px' }}>
-                <div><span style={{ color: '#6b6b7b' }}>Plaintiff:</span> <span style={{ color: '#d4d4dc' }}>{l.plaintiff}</span></div>
-                <div><span style={{ color: '#6b6b7b' }}>Defendant:</span> <span style={{ color: '#d4d4dc' }}>{l.defendant}</span></div>
-                <div><span style={{ color: '#6b6b7b' }}>Court:</span> <span style={{ color: '#d4d4dc' }}>{l.court}</span></div>
-                <div><span style={{ color: '#6b6b7b' }}>Filed:</span> <span style={{ color: '#d4d4dc' }}>{l.filed}</span></div>
-              </div>
-              <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '12px' }}>
-                <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>{l.summary}</p>
-              </div>
-              {l.ruling && (
-                <div style={{ padding: '12px 14px', background: 'rgba(34,197,94,0.06)', borderRadius: '8px', borderLeft: '2px solid #22c55e', marginBottom: '12px' }}>
-                  <div style={{ fontSize: '12px', color: '#22c55e', marginBottom: '6px' }}>RULING</div>
-                  <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>{l.ruling}</p>
-                </div>
-              )}
-              <div style={{ fontSize: '10px', color: '#4a4a5a' }}>Sources: {(l.sources || []).join(' • ')}</div>
-            </Card>
-          ))}
-        </>}
-
         {/* MONEY */}
         {activeTab === 'money' && <>
           <PageHeader title="Follow the Money" subtitle="How Trump is profiting from the presidency" />
