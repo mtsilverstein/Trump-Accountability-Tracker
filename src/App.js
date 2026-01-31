@@ -396,22 +396,22 @@ function App() {
       onClick={onClick}
       style={{
         flex: '1 1 0',
-        minWidth: '50px',
-        maxWidth: '100px',
-        padding: '10px 6px',
+        minWidth: '0',
+        padding: '8px 2px 6px',
         background: 'transparent',
         border: 'none',
         borderBottom: active ? '2px solid #ef4444' : '2px solid transparent',
         color: active ? '#fff' : '#6b6b7b',
         cursor: 'pointer',
-        fontSize: '9px',
+        fontSize: '8px',
         fontWeight: '600',
         textAlign: 'center',
         fontFamily: 'inherit',
         touchAction: 'manipulation',
+        letterSpacing: '-0.3px',
       }}
     >
-      <div style={{ fontSize: '18px', marginBottom: '2px' }}>{icon}</div>
+      <div style={{ fontSize: '22px', marginBottom: '2px', lineHeight: 1 }}>{icon}</div>
       {label}
     </button>
   );
@@ -523,35 +523,42 @@ function App() {
             
             {/* Debt Card */}
             <Card glow="#ef4444">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500' }}>U.S. National Debt</span>
-                <span style={{ fontSize: '9px', color: '#ef4444', background: 'rgba(239,68,68,0.15)', padding: '4px 10px', borderRadius: '4px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite' }}></span> LIVE</span>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500' }}>U.S. National Debt</span>
+                  <span style={{ fontSize: '9px', color: '#ef4444', background: 'rgba(239,68,68,0.15)', padding: '4px 10px', borderRadius: '4px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite' }}></span> LIVE</span>
+                </div>
+                <DebtDisplay debt={data.debt} />
+                <a href="https://fiscaldata.treasury.gov/datasets/debt-to-the-penny/debt-to-the-penny" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '10px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: U.S. Treasury →</a>
               </div>
-              <DebtDisplay debt={data.debt} />
-              <a href="https://fiscaldata.treasury.gov/datasets/debt-to-the-penny/debt-to-the-penny" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '10px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: U.S. Treasury →</a>
             </Card>
 
             {/* Wealth Card */}
             <Card glow="#22c55e">
-              <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Trump Net Worth</div>
-              <div style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: '700', color: '#22c55e', letterSpacing: '-1px' }}>${wealth.current || 6.6}B</div>
-              <div style={{ fontSize: '12px', color: '#6b6b7b', margin: '8px 0 12px' }}>Forbes • Rank #{wealth.rank || 581}</div>
-              
-              <div style={{ padding: '14px 16px', background: 'rgba(34,197,94,0.08)', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.15)' }}>
-                <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Gained Since Jan 2024</div>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B <span style={{ fontSize: '14px', fontWeight: '500' }}>(+{wealthGainPercent}%)</span></div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Trump Net Worth</div>
+                <div style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: '700', color: '#22c55e', letterSpacing: '-1px' }}>${wealth.current || 6.6}B</div>
+                <div style={{ fontSize: '12px', color: '#6b6b7b', margin: '8px 0 12px' }}>Forbes • Rank #{wealth.rank || 581}</div>
+                
+                <div style={{ padding: '14px 16px', background: 'rgba(34,197,94,0.08)', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.15)' }}>
+                  <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Gained Since Jan 2024</div>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#22c55e' }}>+${wealthGain.toFixed(1)}B <span style={{ fontSize: '14px', fontWeight: '500' }}>(+{wealthGainPercent}%)</span></div>
+                </div>
+                <a href="https://www.forbes.com/profile/donald-trump/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '10px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: Forbes Billionaires →</a>
               </div>
-              <a href="https://www.forbes.com/profile/donald-trump/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '10px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: Forbes Billionaires →</a>
             </Card>
 
-            {/* Lawsuits Card - replaced Promises */}
+            {/* Lawsuits Card */}
             <Card glow="#a855f7">
-              <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Legal Challenges</div>
-              <div style={{ fontSize: '48px', fontWeight: '700', color: '#a855f7', lineHeight: 1 }}>
-                358<span style={{ fontSize: '24px', color: '#6b6b7b' }}>+</span>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Legal Challenges</div>
+                <div style={{ fontSize: '48px', fontWeight: '700', color: '#a855f7', lineHeight: 1 }}>
+                  358<span style={{ fontSize: '24px', color: '#6b6b7b' }}>+</span>
+                </div>
+                <div style={{ fontSize: '14px', color: '#a855f7', margin: '8px 0 16px', fontWeight: '500' }}>Lawsuits in 2025</div>
+                <a href="https://www.justsecurity.org/107087/tracker-litigation-legal-challenges-trump-administration/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginBottom: '10px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: Just Security →</a>
+                <ActionLink onClick={() => handleTabClick('lawsuits')} color="#a855f7">View All Cases →</ActionLink>
               </div>
-              <div style={{ fontSize: '14px', color: '#a855f7', margin: '8px 0 16px', fontWeight: '500' }}>Lawsuits in 2025</div>
-              <ActionLink onClick={() => handleTabClick('lawsuits')} color="#a855f7">View All Cases →</ActionLink>
             </Card>
           </div>
 
@@ -698,7 +705,24 @@ function App() {
                   {epsteinNews?.summary || 'DOJ missed Dec 19 deadline. Still withholding 2.5M pages. Deputy AG overseeing release is Trump\'s former personal attorney.'}
                 </div>
                 <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '10px' }}>
-                  Sources: {epsteinNews?.sources?.map(s => s.name || s).join(' • ') || 'NPR • Axios • CNBC • DOJ Records'}
+                  Sources: {epsteinNews?.sources?.length > 0 ? (
+                    epsteinNews.sources.map((s, i) => (
+                      <span key={i}>
+                        {i > 0 && ' • '}
+                        {s.url ? (
+                          <a href={s.url} target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>{s.name}</a>
+                        ) : (
+                          <span style={{ color: '#6b6b7b' }}>{s.name || s}</span>
+                        )}
+                      </span>
+                    ))
+                  ) : (
+                    <>
+                      <a href="https://www.npr.org/2026/01/30/nx-s1-5693904/epstein-files-doj-trump" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>NPR</a> • 
+                      <a href="https://www.axios.com/2025/12/20/epstein-files-doj-deadline" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline', marginLeft: '4px' }}>Axios</a> • 
+                      <a href="https://www.cnbc.com/2025/12/23/epstein-files-trump-flights.html" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline', marginLeft: '4px' }}>CNBC</a>
+                    </>
+                  )}
                 </div>
                 <div style={{ marginTop: '12px' }}>
                   <ActionLink onClick={() => handleTabClick('epstein')} color="#f59e0b">Full Timeline →</ActionLink>
@@ -938,13 +962,13 @@ function App() {
                 A sitting president suing agencies he controls raises unprecedented conflict-of-interest questions. The leaker (Charles Littlejohn) is already serving 5 years in prison.
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <a href="https://www.npr.org/2026/01/30/nx-s1-5693662/trump-sues-irs-and-treasury-for-10-billion-over-leaked-tax-information" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>NPR</a>
-              <span style={{ color: '#3a3a4a' }}>•</span>
-              <a href="https://www.cbsnews.com/news/trump-sues-irs-treasury-10-billion-letting-tax-returns-leak/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>CBS News</a>
-              <span style={{ color: '#3a3a4a' }}>•</span>
-              <a href="https://www.cnbc.com/2026/01/29/trump-sues-irs-and-treasury-for-10-billion-over-leak-of-tax-records.html" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>CNBC</a>
-              <span style={{ color: '#4a4a5a', fontSize: '10px', marginLeft: 'auto' }}>Filed Jan 29, 2026</span>
+            <div style={{ fontSize: '10px', color: '#4a4a5a' }}>
+              Sources: <a href="https://www.npr.org/2026/01/30/nx-s1-5693662/trump-sues-irs-and-treasury-for-10-billion-over-leaked-tax-information" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>NPR</a>
+              <span style={{ color: '#3a3a4a', margin: '0 4px' }}>•</span>
+              <a href="https://www.cbsnews.com/news/trump-sues-irs-treasury-10-billion-letting-tax-returns-leak/" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>CBS News</a>
+              <span style={{ color: '#3a3a4a', margin: '0 4px' }}>•</span>
+              <a href="https://www.cnbc.com/2026/01/29/trump-sues-irs-and-treasury-for-10-billion-over-leak-of-tax-records.html" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>CNBC</a>
+              <span style={{ color: '#4a4a5a', marginLeft: '12px' }}>• Filed Jan 29, 2026</span>
             </div>
           </Card>
           
