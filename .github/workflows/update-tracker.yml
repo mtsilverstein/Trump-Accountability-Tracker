@@ -1,0 +1,23 @@
+name: Update Tracker
+
+on:
+  schedule:
+    # Run at :59 and :29 to account for processing time
+    - cron: '29,59 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  trigger-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Trigger Vercel Update API
+        run: |
+          echo "Triggering update at $(date)"
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -w "\nHTTP Status: %{http_code}\nTime: %{time_total}s\n" \
+            --max-time 180 \
+            "https://trumpaccountabilitytracker.vercel.app/api/update"
+          echo "Update complete at $(date)"

@@ -1025,23 +1025,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Check if this is a "fire and forget" trigger or the actual work
-  const isQuickPing = req.query.ping === 'true';
-  
-  if (isQuickPing) {
-    // Respond immediately to cron-job.org, then trigger the actual update
-    // This prevents timeout issues
-    res.status(200).json({ success: true, message: 'Update triggered', timestamp: new Date().toISOString() });
-    
-    // Fire off the actual update (don't await it)
-    fetch(`https://${req.headers.host}/api/update`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    }).catch(err => console.error('Background update trigger failed:', err));
-    
-    return;
-  }
-
   try {
     console.log('Starting update...');
     
