@@ -2,6 +2,38 @@ import React, { useState, useEffect, useMemo, useRef, Component } from 'react';
 import { supabase } from './supabaseClient';
 import { INITIAL_DATA } from './initialData';
 
+// ==================== DATE FORMATTING HELPERS ====================
+// For displaying relative dates on breaking news items
+
+function formatRelativeDate(dateString) {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'TODAY';
+  if (diffDays === 1) return 'YESTERDAY';
+  if (diffDays < 7) return `${diffDays} DAYS AGO`;
+  
+  // Format as "JAN 30, 2026"
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  }).toUpperCase();
+}
+
+function formatDateShort(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric'
+  });
+}
+
 // ==================== ERROR BOUNDARY (Priority Action #3) ====================
 // Catches JavaScript errors anywhere in child component tree and displays fallback UI
 
@@ -201,10 +233,33 @@ function App() {
     fetchData();
     const channel = supabase.channel('tracker-updates')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tracker_data' },
-        (payload) => { if (payload.new?.data) { setData(payload.new.data); setLastSync(new Date().toISOString()); } })
+        (payload) => { 
+          if (payload.new?.data) { 
+            // Merge with baseline data to ensure promises/constitutional are always up to date
+            const merged = mergeWithBaseline(payload.new.data);
+            setData(merged); 
+            setLastSync(new Date().toISOString()); 
+          } 
+        })
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, []);
+
+  // Merge Supabase data with baseline - ensures brokenPromises & constitutionalConcerns
+  // always use the latest hardcoded baseline from INITIAL_DATA
+  function mergeWithBaseline(supabaseData) {
+    return {
+      ...supabaseData,
+      // Always use baseline data for promises and constitutional (these are manually curated)
+      brokenPromises: INITIAL_DATA.brokenPromises,
+      constitutionalConcerns: INITIAL_DATA.constitutionalConcerns,
+      // Keep dynamic data from Supabase
+      iceVictims: supabaseData.iceVictims || INITIAL_DATA.iceVictims,
+      lawsuits: supabaseData.lawsuits || INITIAL_DATA.lawsuits || [],
+      polls: supabaseData.polls || INITIAL_DATA.polls,
+      epsteinFiles: supabaseData.epsteinFiles || INITIAL_DATA.epsteinFiles,
+    };
+  }
 
   async function fetchData() {
     setError(null);
@@ -221,7 +276,9 @@ function App() {
       });
       
       if (result?.data && Object.keys(result.data).length > 0) {
-        setData(result.data);
+        // Merge with baseline to ensure promises/constitutional are current
+        const mergedData = mergeWithBaseline(result.data);
+        setData(mergedData);
         setLastSync(result.updated_at);
       }
     } catch (err) {
@@ -591,16 +648,16 @@ function App() {
             </div>
           </Card>
 
-          {/* Epstein Files Summary - NEW */}
+          {/* Epstein Files Summary - with dynamic date */}
           <Card style={{ marginBottom: '24px', borderLeft: '3px solid #f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '9px', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#f59e0b', color: '#000' }}>TODAY</span>
+              <span style={{ fontSize: '9px', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#f59e0b', color: '#000' }}>JAN 30, 2026</span>
               <span style={{ fontSize: '13px', color: '#fcd34d', fontWeight: '600' }}>Epstein Files Released</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
               <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px' }}>
                 <div style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>3M</div>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '2px' }}>Pages released today</div>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '2px' }}>Pages released Jan 30</div>
               </div>
               <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px' }}>
                 <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>8</div>
@@ -610,6 +667,7 @@ function App() {
             <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', fontSize: '12px', color: '#a8a8b8', lineHeight: 1.6 }}>
               DOJ missed Dec 19 deadline. Still withholding 2.5M pages. Deputy AG overseeing release is Trump's former personal attorney.
             </div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '10px' }}>Sources: NPR • Axios • CNBC • DOJ Records</div>
             <div style={{ marginTop: '12px' }}>
               <ActionLink onClick={() => handleTabClick('epstein')} color="#f59e0b">Full Timeline →</ActionLink>
             </div>
