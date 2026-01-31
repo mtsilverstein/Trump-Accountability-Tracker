@@ -218,22 +218,22 @@ function App() {
       type="button"
       onClick={onClick}
       style={{
-        flex: '1 1 0',
-        minWidth: '0',
-        padding: '10px 2px',
+        flex: '0 0 auto',
+        minWidth: '60px',
+        padding: '12px 8px',
         background: 'transparent',
         border: 'none',
         borderBottom: active ? '2px solid #ef4444' : '2px solid transparent',
         color: active ? '#fff' : '#6b6b7b',
         cursor: 'pointer',
-        fontSize: '8px',
+        fontSize: '10px',
         fontWeight: '600',
         textAlign: 'center',
         fontFamily: 'inherit',
         touchAction: 'manipulation',
       }}
     >
-      <div style={{ fontSize: '14px', marginBottom: '2px' }}>{icon}</div>
+      <div style={{ fontSize: '16px', marginBottom: '3px' }}>{icon}</div>
       {label}
     </button>
   );
@@ -319,9 +319,9 @@ function App() {
         </div>
       )}
 
-      {/* Nav */}
-      <nav style={{ background: '#0a0a0f', position: 'sticky', top: 0, zIndex: 1000, borderBottom: '1px solid #1a1a22' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', padding: '0 4px' }}>
+      {/* Nav - Horizontally scrollable on mobile */}
+      <nav style={{ background: '#0a0a0f', position: 'sticky', top: 0, zIndex: 1000, borderBottom: '1px solid #1a1a22', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', padding: '0 4px', minWidth: 'max-content' }}>
           {tabs.map(t => (
             <NavButton key={t.id} active={activeTab === t.id} onClick={() => handleTabClick(t.id)} icon={t.icon} label={t.label} />
           ))}
