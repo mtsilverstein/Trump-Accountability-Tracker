@@ -183,7 +183,7 @@ function App() {
   );
 
   const tabs = [
-    { id: 'overview', label: 'Home', icon: '📊' },
+    { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'constitution', label: 'Const.', icon: '📜' },
     { id: 'lawsuits', label: 'Legal', icon: '⚖️' },
     { id: 'money', label: 'Money', icon: '💰' },
@@ -212,28 +212,29 @@ function App() {
     </div>
   );
 
-  // Simple button component
+  // Simple button component - responsive for mobile/desktop
   const NavButton = ({ active, onClick, icon, label }) => (
     <button
       type="button"
       onClick={onClick}
       style={{
-        flex: '0 0 auto',
-        minWidth: '60px',
-        padding: '12px 8px',
+        flex: '1 1 0',
+        minWidth: '50px',
+        maxWidth: '100px',
+        padding: '10px 6px',
         background: 'transparent',
         border: 'none',
         borderBottom: active ? '2px solid #ef4444' : '2px solid transparent',
         color: active ? '#fff' : '#6b6b7b',
         cursor: 'pointer',
-        fontSize: '10px',
+        fontSize: '9px',
         fontWeight: '600',
         textAlign: 'center',
         fontFamily: 'inherit',
         touchAction: 'manipulation',
       }}
     >
-      <div style={{ fontSize: '16px', marginBottom: '3px' }}>{icon}</div>
+      <div style={{ fontSize: '18px', marginBottom: '2px' }}>{icon}</div>
       {label}
     </button>
   );
@@ -319,9 +320,19 @@ function App() {
         </div>
       )}
 
-      {/* Nav - Horizontally scrollable on mobile */}
-      <nav style={{ background: '#0a0a0f', position: 'sticky', top: 0, zIndex: 1000, borderBottom: '1px solid #1a1a22', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', padding: '0 4px', minWidth: 'max-content' }}>
+      {/* Nav - Scrollable on mobile, centered on desktop */}
+      <nav style={{ 
+        background: '#0a0a0f', 
+        position: 'sticky', 
+        top: 0, 
+        zIndex: 1000, 
+        borderBottom: '1px solid #1a1a22', 
+        overflowX: 'auto', 
+        WebkitOverflowScrolling: 'touch',
+        msOverflowStyle: 'none',
+        scrollbarWidth: 'none',
+      }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', padding: '0' }}>
           {tabs.map(t => (
             <NavButton key={t.id} active={activeTab === t.id} onClick={() => handleTabClick(t.id)} icon={t.icon} label={t.label} />
           ))}
@@ -459,16 +470,32 @@ function App() {
               <span style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500' }}>Approval Rating</span>
               <span style={{ fontSize: '9px', color: '#3b82f6', background: 'rgba(59,130,246,0.15)', padding: '4px 10px', borderRadius: '4px', fontWeight: '600' }}>JAN 2026</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(239,68,68,0.08)', borderRadius: '10px' }}>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: '#ef4444' }}>39%</div>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Approve</div>
+            
+            {/* Bar Graph */}
+            <div style={{ marginBottom: '16px' }}>
+              {/* Approve bar */}
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: '600' }}>Approve</span>
+                  <span style={{ fontSize: '18px', fontWeight: '700', color: '#22c55e' }}>39%</span>
+                </div>
+                <div style={{ height: '12px', background: '#1a1a22', borderRadius: '6px', overflow: 'hidden' }}>
+                  <div style={{ width: '39%', height: '100%', background: 'linear-gradient(90deg, #22c55e 0%, #16a34a 100%)', borderRadius: '6px' }} />
+                </div>
               </div>
-              <div style={{ textAlign: 'center', padding: '14px', background: 'rgba(107,107,123,0.1)', borderRadius: '10px' }}>
-                <div style={{ fontSize: '28px', fontWeight: '700', color: '#6b6b7b' }}>56%</div>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Disapprove</div>
+              
+              {/* Disapprove bar */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: '600' }}>Disapprove</span>
+                  <span style={{ fontSize: '18px', fontWeight: '700', color: '#ef4444' }}>56%</span>
+                </div>
+                <div style={{ height: '12px', background: '#1a1a22', borderRadius: '6px', overflow: 'hidden' }}>
+                  <div style={{ width: '56%', height: '100%', background: 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)', borderRadius: '6px' }} />
+                </div>
               </div>
             </div>
+            
             <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', fontSize: '12px', color: '#888' }}>
               <strong style={{ color: '#ef4444' }}>58%</strong> say ICE has gone "too far" • <strong style={{ color: '#ef4444' }}>54%</strong> say country worse off
             </div>
@@ -1555,7 +1582,8 @@ function App() {
         @keyframes spin { to { transform: rotate(360deg) } }
         * { box-sizing: border-box; }
         ::selection { background: rgba(239,68,68,.3) }
-        nav div::-webkit-scrollbar { display: none }
+        nav::-webkit-scrollbar { display: none }
+        nav { -ms-overflow-style: none; scrollbar-width: none; }
         a, button { touch-action: manipulation; -webkit-touch-callout: none; }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
       `}</style>
