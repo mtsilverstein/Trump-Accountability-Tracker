@@ -5,12 +5,14 @@
  * ✅ Action 2: Input validation for all data
  * ✅ Action 5: Extended to track polls
  * ✅ Action 6: Extended to track lawsuits
+ * ✅ Action 7: Epstein files tracking
  * 
  * Features:
  * - Gemini 2.5 Pro for news analysis
  * - Smart ICE incident handling (unnamed → named updates)
  * - Lawsuit tracking (against admin AND by Trump)
  * - Poll tracking from news
+ * - Epstein files tracking
  * - Input validation/sanitization
  */
 
@@ -22,15 +24,30 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
 
 const SEARCH_QUERIES = [
+  // ICE/Immigration enforcement
   'ICE shooting victim 2026',
   'Border Patrol shooting 2026',
   'ICE agent kills',
+  
+  // Lawsuits
   'Trump lawsuit federal court 2026',
   'Trump administration sued 2026',
   'lawsuit against Trump',
   'Trump sues',
+  
+  // Polls
   'Trump approval rating poll January 2026',
   'Trump poll numbers',
+  
+  // Epstein files - Trump and his circle
+  'Epstein files Trump',
+  'Epstein files released 2026',
+  'Epstein documents DOJ',
+  'Trump Epstein flight logs',
+  'Epstein files Elon Musk',
+  'Epstein files Steve Bannon',
+  'Epstein Maxwell Trump',
+  'Todd Blanche Epstein',
 ];
 
 // ==================== INPUT VALIDATION (Priority Action #2) ====================
@@ -180,6 +197,47 @@ function validateIceStats(stats) {
     usCitizensShot: sanitizeNumber(stats.usCitizensShot, 0, 10000),
     detentionDeaths2025: sanitizeNumber(stats.detentionDeaths2025, 0, 10000),
     detentionDeaths2026: sanitizeNumber(stats.detentionDeaths2026, 0, 10000),
+  };
+}
+
+/**
+ * Validate and sanitize Epstein revelation
+ */
+function validateEpsteinRevelation(revelation) {
+  if (!revelation || typeof revelation !== 'object') return null;
+  
+  const headline = sanitizeString(revelation.headline, 300);
+  if (!headline) return null;
+  
+  return {
+    id: sanitizeString(revelation.id, 100) || `epstein-${Date.now()}`,
+    headline,
+    details: sanitizeString(revelation.details, 2000),
+    involvedPerson: sanitizeString(revelation.involvedPerson, 100),
+    date: sanitizeString(revelation.date, 50),
+    sources: Array.isArray(revelation.sources)
+      ? revelation.sources.slice(0, 10).map(s => sanitizeString(s, 200)).filter(Boolean)
+      : [],
+  };
+}
+
+/**
+ * Validate Epstein updates object
+ */
+function validateEpsteinUpdates(updates) {
+  if (!updates || typeof updates !== 'object') return null;
+  
+  const validRevelations = Array.isArray(updates.newRevelations)
+    ? updates.newRevelations.map(validateEpsteinRevelation).filter(Boolean)
+    : [];
+  
+  return {
+    newRevelations: validRevelations,
+    pagesReleased: sanitizeNumber(updates.pagesReleased, 0, 100000000),
+    pagesWithheld: sanitizeNumber(updates.pagesWithheld, 0, 100000000),
+    newFlightInfo: sanitizeString(updates.newFlightInfo, 1000),
+    dojActions: sanitizeString(updates.dojActions, 1000),
+    lastUpdated: new Date().toISOString(),
   };
 }
 
@@ -580,6 +638,22 @@ Return ONLY valid JSON (no markdown, no backticks) with this exact structure:
     },
     "netApproval": -12.9
   },
+  "epsteinUpdates": {
+    "newRevelations": [
+      {
+        "id": "short-id",
+        "headline": "Brief headline",
+        "details": "What was revealed",
+        "involvedPerson": "Trump / Musk / Bannon / Maxwell / etc",
+        "date": "Month Day, Year",
+        "sources": ["Source1"]
+      }
+    ],
+    "pagesReleased": null,
+    "pagesWithheld": null,
+    "newFlightInfo": null,
+    "dojActions": null
+  },
   "iceStatsUpdate": {
     "totalShootings": null,
     "shootingDeaths": null,
@@ -595,9 +669,10 @@ CRITICAL RULES:
 3. If you find a NAME for someone who was previously "Unnamed", include them so we can update the record
 4. For lawsuits: Include cases against Trump personally, the Trump administration, federal agencies under Trump, AND cases filed BY Trump
 5. For polls: Extract any approval rating numbers mentioned. Use null if not mentioned.
-6. Do NOT duplicate incidents/lawsuits already in the database
-7. Set stats/polls to null if no specific numbers found
-8. Return empty arrays [] if nothing new found - this is fine!`;
+6. For Epstein: Track any NEW revelations about Trump, Musk, Bannon, or other Trump circle members. Track DOJ release actions.
+7. Do NOT duplicate incidents/lawsuits already in the database
+8. Set stats/polls to null if no specific numbers found
+9. Return empty arrays [] if nothing new found - this is fine!`;
 
     // Call Gemini
     const geminiResponse = await callGemini(prompt);
@@ -655,6 +730,29 @@ CRITICAL RULES:
       lastUpdated: new Date().toISOString(),
     } : currentPolls;
 
+    // Update Epstein data if provided - VALIDATED
+    const currentEpstein = currentData.epsteinFiles || { revelations: [] };
+    const newEpstein = validateEpsteinUpdates(parsed.epsteinUpdates);
+    let updatedEpstein = currentEpstein;
+    
+    if (newEpstein) {
+      // Merge revelations (dedupe by headline)
+      const existingHeadlines = new Set((currentEpstein.revelations || []).map(r => r.headline?.toLowerCase()));
+      const trulyNewRevelations = (newEpstein.newRevelations || []).filter(r => 
+        !existingHeadlines.has(r.headline?.toLowerCase())
+      );
+      
+      updatedEpstein = {
+        ...currentEpstein,
+        revelations: [...(currentEpstein.revelations || []), ...trulyNewRevelations].slice(0, 100),
+        ...(newEpstein.pagesReleased !== null ? { pagesReleased: newEpstein.pagesReleased } : {}),
+        ...(newEpstein.pagesWithheld !== null ? { pagesWithheld: newEpstein.pagesWithheld } : {}),
+        ...(newEpstein.newFlightInfo ? { latestFlightInfo: newEpstein.newFlightInfo } : {}),
+        ...(newEpstein.dojActions ? { latestDojAction: newEpstein.dojActions } : {}),
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+
     // Build updated data
     const updatedData = {
       ...currentData,
@@ -662,6 +760,7 @@ CRITICAL RULES:
       iceStats: updatedStats,
       lawsuits: mergedLawsuits,
       polls: updatedPolls,
+      epsteinFiles: updatedEpstein,
       brokenPromises: getBrokenPromises(),
       lastUpdated: new Date().toISOString(),
       lastUpdateReason: sanitizeString(parsed.updateReason, 500) || 'Automated update',
@@ -676,11 +775,13 @@ CRITICAL RULES:
 
     // Log the update
     const newLawsuitsCount = mergedLawsuits.length - (currentData.lawsuits || []).length;
+    const newEpsteinCount = (updatedEpstein.revelations || []).length - (currentEpstein.revelations || []).length;
     await logUpdate({
       success: true,
       news_count: news.length,
       new_incidents: mergedIce.length - (currentData.iceVictims || []).length,
       new_lawsuits: newLawsuitsCount,
+      new_epstein_revelations: newEpsteinCount,
       polls_updated: !!newPolls,
       reason: sanitizeString(parsed.updateReason, 500) || 'Automated update',
     });
@@ -691,6 +792,7 @@ CRITICAL RULES:
       updated: true,
       newIncidents: mergedIce.length - (currentData.iceVictims || []).length,
       newLawsuits: newLawsuitsCount,
+      newEpsteinRevelations: newEpsteinCount,
       pollsUpdated: !!newPolls,
       reason: parsed.updateReason,
     });

@@ -184,12 +184,13 @@ function App() {
 
   const tabs = [
     { id: 'overview', label: 'Home', icon: '📊' },
-    { id: 'promises', label: 'Promises', icon: '❌' },
     { id: 'constitution', label: 'Const.', icon: '📜' },
     { id: 'lawsuits', label: 'Legal', icon: '⚖️' },
     { id: 'money', label: 'Money', icon: '💰' },
     { id: 'ice', label: 'ICE', icon: '⚠️' },
+    { id: 'epstein', label: 'Epstein', icon: '📁' },
     { id: 'polls', label: 'Polls', icon: '📉' },
+    { id: 'promises', label: 'Promises', icon: '❌' },
     { id: 'action', label: 'Act', icon: '📞' },
   ];
 
@@ -279,7 +280,14 @@ function App() {
             </span>
           </div>
           
-          {lastSync && <div style={{ fontSize: '10px', color: '#3a3a4a', marginTop: '16px' }}>Last sync: {new Date(lastSync).toLocaleString()}</div>}
+          {lastSync && (
+            <div style={{ fontSize: '10px', color: '#3a3a4a', marginTop: '16px' }}>
+              Data updated: {new Date(lastSync).toLocaleString()} 
+              <span style={{ marginLeft: '8px', color: '#4a4a5a' }}>
+                ({Math.round((Date.now() - new Date(lastSync).getTime()) / 60000)} min ago)
+              </span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -358,14 +366,14 @@ function App() {
               <a href="https://www.forbes.com/profile/donald-trump/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '10px', fontSize: '10px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: Forbes Billionaires →</a>
             </Card>
 
-            {/* Promises Card */}
-            <Card glow="#f97316">
-              <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Campaign Promises Tracked</div>
-              <div style={{ fontSize: '48px', fontWeight: '700', color: '#f97316', lineHeight: 1 }}>
-                {brokenPromises.filter(p => p.status === 'BROKEN').length}<span style={{ fontSize: '24px', color: '#6b6b7b' }}>/{brokenPromises.length}</span>
+            {/* Lawsuits Card - replaced Promises */}
+            <Card glow="#a855f7">
+              <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Legal Challenges</div>
+              <div style={{ fontSize: '48px', fontWeight: '700', color: '#a855f7', lineHeight: 1 }}>
+                358<span style={{ fontSize: '24px', color: '#6b6b7b' }}>+</span>
               </div>
-              <div style={{ fontSize: '14px', color: '#f97316', margin: '8px 0 16px', fontWeight: '500' }}>Broken So Far</div>
-              <ActionLink onClick={() => handleTabClick('promises')} color="#f97316">View All Promises →</ActionLink>
+              <div style={{ fontSize: '14px', color: '#a855f7', margin: '8px 0 16px', fontWeight: '500' }}>Lawsuits in 2025</div>
+              <ActionLink onClick={() => handleTabClick('lawsuits')} color="#a855f7">View All Cases →</ActionLink>
             </Card>
           </div>
 
@@ -467,6 +475,40 @@ function App() {
             <div style={{ marginTop: '12px' }}>
               <ActionLink onClick={() => handleTabClick('polls')} color="#3b82f6">All Poll Data →</ActionLink>
             </div>
+          </Card>
+
+          {/* Epstein Files Summary - NEW */}
+          <Card style={{ marginBottom: '24px', borderLeft: '3px solid #f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '9px', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#f59e0b', color: '#000' }}>TODAY</span>
+              <span style={{ fontSize: '13px', color: '#fcd34d', fontWeight: '600' }}>Epstein Files Released</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>3M</div>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '2px' }}>Pages released today</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>8</div>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '2px' }}>Trump flights on Epstein jet</div>
+              </div>
+            </div>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', fontSize: '12px', color: '#a8a8b8', lineHeight: 1.6 }}>
+              DOJ missed Dec 19 deadline. Still withholding 2.5M pages. Deputy AG overseeing release is Trump's former personal attorney.
+            </div>
+            <div style={{ marginTop: '12px' }}>
+              <ActionLink onClick={() => handleTabClick('epstein')} color="#f59e0b">Full Timeline →</ActionLink>
+            </div>
+          </Card>
+
+          {/* Promises Summary - MOVED DOWN */}
+          <Card glow="#f97316" style={{ marginBottom: '24px' }}>
+            <div style={{ fontSize: '13px', color: '#6b6b7b', fontWeight: '500', marginBottom: '12px' }}>Campaign Promises Tracked</div>
+            <div style={{ fontSize: '48px', fontWeight: '700', color: '#f97316', lineHeight: 1 }}>
+              {brokenPromises.filter(p => p.status === 'BROKEN').length}<span style={{ fontSize: '24px', color: '#6b6b7b' }}>/{brokenPromises.length}</span>
+            </div>
+            <div style={{ fontSize: '14px', color: '#f97316', margin: '8px 0 16px', fontWeight: '500' }}>Broken So Far</div>
+            <ActionLink onClick={() => handleTabClick('promises')} color="#f97316">View All Promises →</ActionLink>
           </Card>
 
           {/* Golf Summary */}
@@ -1324,6 +1366,177 @@ function App() {
               </div>
             </div>
             <a href="https://www.nbcnews.com/politics/trump-administration/trumps-approval-rating-takes-hit-first-year-back-office-rcna253192" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '16px', fontSize: '11px', color: '#4a4a5a', textDecoration: 'underline' }}>Source: NBC News →</a>
+          </Card>
+        </>}
+
+        {/* EPSTEIN FILES */}
+        {activeTab === 'epstein' && <>
+          <PageHeader title="Epstein Files" subtitle="What the released documents reveal about Trump's connections" />
+          
+          {/* Breaking News Banner */}
+          <Card style={{ marginBottom: '24px', border: '1px solid rgba(245,158,11,0.4)', background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, #13131a 100%)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '9px', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#f59e0b', color: '#000', animation: 'pulse 2s infinite' }}>BREAKING</span>
+              <span style={{ fontSize: '12px', color: '#fcd34d', fontWeight: '600' }}>DOJ Releases 3 Million More Pages</span>
+            </div>
+            <p style={{ fontSize: '14px', color: '#d4d4dc', lineHeight: 1.7, margin: '0 0 12px 0' }}>
+              The Department of Justice released over 3 million pages of Epstein files today (Jan 30, 2026), more than a month after the legal deadline. They are withholding another 2.5 million pages.
+            </p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <a href="https://www.npr.org/2026/01/30/nx-s1-5693904/epstein-files-doj-trump" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>NPR</a>
+              <span style={{ color: '#3a3a4a' }}>•</span>
+              <a href="https://www.nbcnews.com/politics/justice-department/live-blog/epstein-files-trump-doj-release-live-updates-rcna256639" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>NBC News</a>
+              <span style={{ color: '#3a3a4a' }}>•</span>
+              <a href="https://www.aljazeera.com/news/2026/1/30/us-department-of-justice-releases-three-million-new-epstein-documents" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>Al Jazeera</a>
+            </div>
+          </Card>
+
+          {/* Key Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(245,158,11,0.08)', borderRadius: '12px', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#f59e0b' }}>8</div>
+              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Flights on Epstein's Jet</div>
+            </div>
+            <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(239,68,68,0.08)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#ef4444' }}>4</div>
+              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Flights with Maxwell Aboard</div>
+            </div>
+            <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(168,85,247,0.08)', borderRadius: '12px', border: '1px solid rgba(168,85,247,0.2)' }}>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#a855f7' }}>3M+</div>
+              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Pages Released Today</div>
+            </div>
+            <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(107,107,123,0.1)', borderRadius: '12px', border: '1px solid rgba(107,107,123,0.2)' }}>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: '#6b6b7b' }}>2.5M</div>
+              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Pages Still Withheld</div>
+            </div>
+          </div>
+
+          {/* Flight Log Details */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #f59e0b' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '600', padding: '4px 10px', borderRadius: '4px', background: 'rgba(245,158,11,0.2)', color: '#f59e0b' }}>FLIGHT LOGS</span>
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: '0 0 12px 0' }}>Trump Flew on Epstein's Jet "Many More Times" Than Known</h3>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#d4d4dc', margin: 0, lineHeight: 1.7 }}>
+                According to a January 2020 email from an SDNY prosecutor, flight records show Trump flew on Epstein's private jet at least 8 times between 1993 and 1996—"many more times than previously has been reported."
+              </p>
+            </div>
+            <div style={{ display: 'grid', gap: '10px' }}>
+              {[
+                { detail: 'On one flight in 1993, only passengers were Trump and Epstein', color: '#f59e0b' },
+                { detail: 'On another flight, only 3 passengers: Trump, Epstein, and a 20-year-old woman (name redacted)', color: '#ef4444' },
+                { detail: 'At least 4 flights included Ghislaine Maxwell', color: '#a855f7' },
+                { detail: '"Two passengers were women who would be possible witnesses in a Maxwell case"', color: '#f59e0b' },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: '10px 14px', background: '#0a0a0f', borderRadius: '6px', borderLeft: `3px solid ${item.color}`, fontSize: '12px', color: '#a8a8b8' }}>
+                  {item.detail}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>
+              <a href="https://www.nbcnews.com/politics/justice-department/justice-department-releases-3rd-batch-jeffrey-epstein-files-mention-tr-rcna250533" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>Source: NBC News</a> • 
+              <a href="https://www.aljazeera.com/news/2025/12/23/newly-released-epstein-files-spotlight-trumps-past-jet-trips-with-maxwell" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline', marginLeft: '8px' }}>Al Jazeera</a>
+            </div>
+          </Card>
+
+          {/* Mar-a-Lago Connection */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #ef4444' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '600', padding: '4px 10px', borderRadius: '4px', background: 'rgba(239,68,68,0.2)', color: '#ef4444' }}>MAR-A-LAGO</span>
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: '0 0 12px 0' }}>Mar-a-Lago Subpoenaed for Employment Records</h3>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#d4d4dc', margin: 0, lineHeight: 1.7 }}>
+                Documents reveal Mar-a-Lago was subpoenaed in 2021 for employment records as part of the Maxwell investigation. Virginia Giuffre, one of Epstein's most prominent accusers, was recruited while working as a locker-room attendant at Mar-a-Lago in 2000.
+              </p>
+            </div>
+            <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.06)', borderRadius: '8px', borderLeft: '2px solid #ef4444' }}>
+              <div style={{ fontSize: '12px', color: '#ef4444', marginBottom: '6px' }}>FROM THE FILES</div>
+              <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>
+                A 2012 message found in the files asks: "What does JE think of going to Mar-a-Lago after xmas instead of his island?"
+              </p>
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: CBS News • Wikipedia • Court Records</div>
+          </Card>
+
+          {/* Conflict of Interest */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #a855f7' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10px', fontWeight: '600', padding: '4px 10px', borderRadius: '4px', background: 'rgba(168,85,247,0.2)', color: '#a855f7' }}>CONFLICT OF INTEREST</span>
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: '0 0 12px 0' }}>Trump's Former Lawyer Overseeing Release</h3>
+            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#d4d4dc', margin: 0, lineHeight: 1.7 }}>
+                Deputy Attorney General Todd Blanche—who is overseeing the Epstein file releases—is Trump's former personal defense attorney. Blanche previously held a private meeting with Ghislaine Maxwell in prison, during which Maxwell reportedly "gushed" about Trump.
+              </p>
+            </div>
+            <div style={{ padding: '12px 14px', background: 'rgba(168,85,247,0.06)', borderRadius: '8px' }}>
+              <div style={{ fontSize: '12px', color: '#a855f7', marginBottom: '6px' }}>BLANCHE'S STATEMENT</div>
+              <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>
+                "We didn't protect President Trump. We didn't protect or not protect anybody."
+              </p>
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Daily Beast • NPR • ABC News</div>
+          </Card>
+
+          {/* Timeline */}
+          <Card style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '14px', color: '#3b82f6', fontWeight: '600', marginBottom: '16px' }}>Broken Promise Timeline</div>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {[
+                { date: 'June 2024', event: 'Trump says he "would" release Epstein files', color: '#22c55e' },
+                { date: 'Nov 19, 2025', event: 'Trump signs Epstein Files Transparency Act (427-1 vote forced his hand)', color: '#3b82f6' },
+                { date: 'Dec 19, 2025', event: 'DEADLINE: DOJ required to release all files', color: '#ef4444' },
+                { date: 'Dec 19, 2025', event: 'DOJ MISSES deadline, releases only ~500K heavily redacted pages', color: '#ef4444' },
+                { date: 'Dec 23, 2025', event: 'Larger release reveals 8 Trump flights on Epstein jet', color: '#f59e0b' },
+                { date: 'Jan 30, 2026', event: '3M more pages released, 2.5M still withheld', color: '#f59e0b' },
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: item.color, marginTop: '4px', flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#6b6b7b' }}>{item.date}</div>
+                    <div style={{ fontSize: '13px', color: '#d4d4dc' }}>{item.event}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* What Trump Has Said */}
+          <Card style={{ marginBottom: '16px', borderLeft: '3px solid #6b6b7b' }}>
+            <div style={{ fontSize: '14px', color: '#6b6b7b', fontWeight: '600', marginBottom: '16px' }}>What Trump Has Said</div>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, fontStyle: 'italic' }}>"I was never on Epstein's Plane, or at his 'stupid' Island."</p>
+                <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '6px' }}>— Trump, 2024 (contradicted by flight logs)</div>
+              </div>
+              <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, fontStyle: 'italic' }}>"He's a terrific guy. He's a lot of fun to be with. It is even said that he likes beautiful women as much as I do, and many of them are on the younger side."</p>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '6px' }}>— Trump, New York Magazine, 2002</div>
+              </div>
+              <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px' }}>
+                <p style={{ fontSize: '13px', color: '#d4d4dc', margin: 0, fontStyle: 'italic' }}>"I wish her well."</p>
+                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '6px' }}>— Trump on Maxwell's arrest, 2020 (said twice when pressed)</div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Important Context */}
+          <Card>
+            <div style={{ padding: '14px 16px', background: 'rgba(59,130,246,0.08)', borderRadius: '10px', fontSize: '13px', color: '#93c5fd', lineHeight: 1.7 }}>
+              <strong>Important:</strong> Trump has not been charged with any crimes related to Epstein. The DOJ has stated some documents contain "unfounded and false" claims. However, Trump's documented friendship with Epstein, his flights on Epstein's plane, and the recruitment of victims from his club are verified facts. The administration's handling of the file release—missing the deadline, excessive redactions, and having Trump's former lawyer oversee the process—has drawn bipartisan criticism.
+            </div>
+            <div style={{ marginTop: '16px', display: 'grid', gap: '10px' }}>
+              <a href="https://en.wikipedia.org/wiki/Relationship_of_Donald_Trump_and_Jeffrey_Epstein" target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '12px 14px', background: 'rgba(59,130,246,0.1)', borderRadius: '8px', textDecoration: 'none' }}>
+                <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>Wikipedia: Trump-Epstein Relationship</div>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '2px' }}>Comprehensive timeline with sources</div>
+              </a>
+              <a href="https://abcnews.go.com/Politics/timeline-trump-epsteins-relationship-trump-falling/story?id=124241038" target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '12px 14px', background: 'rgba(59,130,246,0.1)', borderRadius: '8px', textDecoration: 'none' }}>
+                <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: '600' }}>ABC News: Detailed Timeline</div>
+                <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '2px' }}>From the 1990s through today</div>
+              </a>
+            </div>
           </Card>
         </>}
       </main>
