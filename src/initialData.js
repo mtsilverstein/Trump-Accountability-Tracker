@@ -475,4 +475,34 @@ export const INITIAL_DATA = {
       sources: ['Federal Court Records', 'Government Executive', 'NPR'],
     },
   ],
+  
+  // Breaking news items - auto-updated by cronjob
+  // Categories: epstein, ice, lawsuit, constitutional, poll, promise
+  breakingNews: [
+    {
+      id: 'epstein-3m-release-2026-01-30',
+      category: 'epstein',
+      date: '2026-01-30',
+      headline: 'DOJ Releases 3 Million More Epstein Pages',
+      summary: 'The Department of Justice released over 3 million pages of Epstein files on January 30, 2026, more than a month after the legal deadline. They are withholding another 2.5 million pages.',
+      sources: [
+        { name: 'NPR', url: 'https://www.npr.org/2026/01/30/nx-s1-5693904/epstein-files-doj-trump' },
+        { name: 'NBC News', url: 'https://www.nbcnews.com/politics/justice-department/live-blog/epstein-files-trump-doj-release-live-updates-rcna256639' },
+        { name: 'Al Jazeera', url: 'https://www.aljazeera.com/news/2026/1/30/us-department-of-justice-releases-three-million-new-epstein-documents' },
+      ],
+      isBreaking: true,
+    },
+    {
+      id: 'ice-shooting-pretti-2026-01-24',
+      category: 'ice',
+      date: '2026-01-24',
+      headline: 'Second U.S. Citizen Shot by Federal Agents in Minneapolis',
+      summary: 'Alex Pretti, 37, a VA hospital ICU nurse, was shot 4 times by Border Patrol agents while observing immigration enforcement. Witnesses say he was helping a woman who had been pushed down.',
+      sources: [
+        { name: 'NPR', url: 'https://www.npr.org' },
+        { name: 'CBS News', url: 'https://www.cbsnews.com' },
+      ],
+      isBreaking: false,
+    },
+  ],
 };

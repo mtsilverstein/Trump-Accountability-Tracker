@@ -300,6 +300,92 @@ function validateConstitutionalUpdates(updates) {
   };
 }
 
+// ==================== BREAKING NEWS VALIDATION ====================
+
+const VALID_BREAKING_CATEGORIES = ['epstein', 'ice', 'lawsuit', 'constitutional', 'poll', 'promise'];
+
+/**
+ * Validate a single breaking news item
+ */
+function validateBreakingNewsItem(item) {
+  if (!item || typeof item !== 'object') return null;
+  if (!item.headline || !item.category || !item.date) return null;
+  
+  // Validate category
+  const category = item.category?.toLowerCase();
+  if (!VALID_BREAKING_CATEGORIES.includes(category)) return null;
+  
+  // Validate date format (YYYY-MM-DD)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(item.date)) return null;
+  
+  // Validate sources array
+  const validSources = Array.isArray(item.sources) 
+    ? item.sources.slice(0, 5).map(s => {
+        if (typeof s === 'string') return { name: sanitizeString(s, 100), url: '' };
+        if (typeof s === 'object' && s.name) {
+          return {
+            name: sanitizeString(s.name, 100),
+            url: sanitizeString(s.url, 500),
+          };
+        }
+        return null;
+      }).filter(Boolean)
+    : [];
+  
+  return {
+    id: sanitizeString(item.id || `${category}-${Date.now()}`, 100),
+    category: category,
+    date: item.date,
+    headline: sanitizeString(item.headline, 100),
+    summary: sanitizeString(item.summary, 500),
+    sources: validSources,
+    isBreaking: Boolean(item.isBreaking),
+    addedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Merge breaking news - keeps most recent, dedupes by headline
+ */
+function mergeBreakingNews(existing, newItems) {
+  const validExisting = (existing || []).map(validateBreakingNewsItem).filter(Boolean);
+  const validNew = (newItems || []).map(validateBreakingNewsItem).filter(Boolean);
+  
+  // Dedupe by normalized headline
+  const existingHeadlines = new Set(validExisting.map(n => normalizeForComparison(n.headline)));
+  
+  const trulyNew = validNew.filter(n => 
+    !existingHeadlines.has(normalizeForComparison(n.headline))
+  );
+  
+  if (trulyNew.length > 0) {
+    console.log(`Adding ${trulyNew.length} new breaking news item(s)`);
+  }
+  
+  // Combine and sort by date (newest first)
+  const combined = [...validExisting, ...trulyNew]
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  // Keep only most recent 20 items
+  return combined.slice(0, 20);
+}
+
+/**
+ * Get the most recent breaking news item for a category
+ */
+function getLatestBreakingNews(breakingNews, category = null) {
+  if (!Array.isArray(breakingNews) || breakingNews.length === 0) return null;
+  
+  const sorted = [...breakingNews].sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  if (category) {
+    return sorted.find(n => n.category === category) || null;
+  }
+  
+  return sorted[0];
+}
+
 // ==================== NEWS FETCHING ====================
 
 /**
@@ -1061,6 +1147,19 @@ Return ONLY valid JSON (no markdown, no backticks) with this exact structure:
     "courtDefianceCount": null,
     "contemptProceedings": null
   },
+  "breakingNews": [
+    {
+      "id": "category-brief-desc-date",
+      "category": "epstein / ice / lawsuit / constitutional / poll",
+      "date": "YYYY-MM-DD",
+      "headline": "Short headline (max 80 chars)",
+      "summary": "2-3 sentence summary of what happened",
+      "sources": [
+        { "name": "Source Name", "url": "https://..." }
+      ],
+      "isBreaking": true
+    }
+  ],
   "iceStatsUpdate": {
     "totalShootings": null,
     "shootingDeaths": null,
@@ -1078,6 +1177,7 @@ CRITICAL RULES:
 5. For polls: Extract any approval rating numbers mentioned. Use null if not mentioned.
 6. For Epstein: Track any NEW revelations about Trump, Musk, Bannon, or other Trump circle members. Track DOJ release actions.
 7. For Constitutional: Track court rulings that find executive actions unconstitutional, contempt proceedings, and administration defiance of court orders
+8. For Breaking News: Flag major developments from today or yesterday as breaking. Categories: epstein (file releases, revelations), ice (shootings, deaths, raids), lawsuit (major rulings, new filings), constitutional (court orders defied, rulings), poll (significant shifts)
 8. Do NOT duplicate incidents/lawsuits already in the database
 9. Set stats/polls to null if no specific numbers found
 10. Return empty arrays [] if nothing new found - this is fine!`;
@@ -1185,6 +1285,11 @@ CRITICAL RULES:
       }
     }
 
+    // Update Breaking News - VALIDATED
+    const currentBreakingNews = currentData.breakingNews || [];
+    const newBreakingNews = Array.isArray(parsed.breakingNews) ? parsed.breakingNews : [];
+    const mergedBreakingNews = mergeBreakingNews(currentBreakingNews, newBreakingNews);
+
     // Build updated data
     const updatedData = {
       ...currentData,
@@ -1195,6 +1300,7 @@ CRITICAL RULES:
       epsteinFiles: updatedEpstein,
       brokenPromises: getBrokenPromises(),
       constitutionalConcerns: mergedConstitutional,
+      breakingNews: mergedBreakingNews,
       lastUpdated: new Date().toISOString(),
       lastUpdateReason: sanitizeString(parsed.updateReason, 500) || 'Automated update',
     };
@@ -1210,6 +1316,7 @@ CRITICAL RULES:
     const newLawsuitsCount = mergedLawsuits.length - (currentData.lawsuits || []).length;
     const newEpsteinCount = (updatedEpstein.revelations || []).length - (currentEpstein.revelations || []).length;
     const newConstitutionalCount = mergedConstitutional.length - baseConstitutional.length;
+    const newBreakingCount = mergedBreakingNews.length - currentBreakingNews.length;
     await logUpdate({
       success: true,
       news_count: news.length,
@@ -1217,6 +1324,7 @@ CRITICAL RULES:
       new_lawsuits: newLawsuitsCount,
       new_epstein_revelations: newEpsteinCount,
       new_constitutional: newConstitutionalCount,
+      new_breaking_news: newBreakingCount,
       polls_updated: !!newPolls,
       reason: sanitizeString(parsed.updateReason, 500) || 'Automated update',
     });
@@ -1228,6 +1336,7 @@ CRITICAL RULES:
       newIncidents: mergedIce.length - (currentData.iceVictims || []).length,
       newLawsuits: newLawsuitsCount,
       newEpsteinRevelations: newEpsteinCount,
+      newBreakingNews: newBreakingCount,
       pollsUpdated: !!newPolls,
       reason: parsed.updateReason,
     });

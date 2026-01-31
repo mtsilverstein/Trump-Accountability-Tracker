@@ -34,6 +34,27 @@ function formatDateShort(dateString) {
   });
 }
 
+function formatDateFull(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    month: 'long', 
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+// Get latest breaking news for a specific category
+function getLatestBreakingNews(breakingNews, category) {
+  if (!Array.isArray(breakingNews) || breakingNews.length === 0) return null;
+  
+  const sorted = [...breakingNews]
+    .filter(n => !category || n.category === category)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  return sorted[0] || null;
+}
+
 // ==================== ERROR BOUNDARY (Priority Action #3) ====================
 // Catches JavaScript errors anywhere in child component tree and displays fallback UI
 
@@ -258,6 +279,8 @@ function App() {
       lawsuits: supabaseData.lawsuits || INITIAL_DATA.lawsuits || [],
       polls: supabaseData.polls || INITIAL_DATA.polls,
       epsteinFiles: supabaseData.epsteinFiles || INITIAL_DATA.epsteinFiles,
+      // Breaking news - use Supabase if available, fallback to initial
+      breakingNews: supabaseData.breakingNews || INITIAL_DATA.breakingNews || [],
     };
   }
 
@@ -648,30 +671,41 @@ function App() {
             </div>
           </Card>
 
-          {/* Epstein Files Summary - with dynamic date */}
-          <Card style={{ marginBottom: '24px', borderLeft: '3px solid #f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '9px', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#f59e0b', color: '#000' }}>JAN 30, 2026</span>
-              <span style={{ fontSize: '13px', color: '#fcd34d', fontWeight: '600' }}>Epstein Files Released</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px' }}>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>3M</div>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '2px' }}>Pages released Jan 30</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px' }}>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>8</div>
-                <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '2px' }}>Trump flights on Epstein jet</div>
-              </div>
-            </div>
-            <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', fontSize: '12px', color: '#a8a8b8', lineHeight: 1.6 }}>
-              DOJ missed Dec 19 deadline. Still withholding 2.5M pages. Deputy AG overseeing release is Trump's former personal attorney.
-            </div>
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '10px' }}>Sources: NPR • Axios • CNBC • DOJ Records</div>
-            <div style={{ marginTop: '12px' }}>
-              <ActionLink onClick={() => handleTabClick('epstein')} color="#f59e0b">Full Timeline →</ActionLink>
-            </div>
-          </Card>
+          {/* Epstein Files Summary - DYNAMIC from breakingNews */}
+          {(() => {
+            const epsteinNews = getLatestBreakingNews(data.breakingNews, 'epstein');
+            return (
+              <Card style={{ marginBottom: '24px', borderLeft: '3px solid #f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '9px', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#f59e0b', color: '#000' }}>
+                    {epsteinNews ? formatRelativeDate(epsteinNews.date) : 'JAN 30, 2026'}
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#fcd34d', fontWeight: '600' }}>
+                    {epsteinNews?.headline || 'Epstein Files Released'}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#f59e0b' }}>3M+</div>
+                    <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '2px' }}>Pages released</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '24px', fontWeight: '700', color: '#ef4444' }}>8</div>
+                    <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '2px' }}>Trump flights on Epstein jet</div>
+                  </div>
+                </div>
+                <div style={{ padding: '12px 14px', background: '#0a0a0f', borderRadius: '8px', fontSize: '12px', color: '#a8a8b8', lineHeight: 1.6 }}>
+                  {epsteinNews?.summary || 'DOJ missed Dec 19 deadline. Still withholding 2.5M pages. Deputy AG overseeing release is Trump\'s former personal attorney.'}
+                </div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '10px' }}>
+                  Sources: {epsteinNews?.sources?.map(s => s.name || s).join(' • ') || 'NPR • Axios • CNBC • DOJ Records'}
+                </div>
+                <div style={{ marginTop: '12px' }}>
+                  <ActionLink onClick={() => handleTabClick('epstein')} color="#f59e0b">Full Timeline →</ActionLink>
+                </div>
+              </Card>
+            );
+          })()}
 
           {/* Promises Summary - MOVED DOWN */}
           <Card glow="#f97316" style={{ marginBottom: '24px' }}>
@@ -1453,20 +1487,30 @@ function App() {
         {activeTab === 'polls' && <>
           <PageHeader title="Approval Ratings" subtitle="Public opinion tracking from major pollsters" />
           
-          {/* Current Approval */}
+          {/* Current Approval - with proportional vertical bars */}
           <Card glow="#ef4444" style={{ marginBottom: '24px' }}>
             <div style={{ fontSize: '10px', letterSpacing: '2px', color: '#4a4a5a', marginBottom: '16px', fontWeight: '600', textAlign: 'center' }}>CURRENT APPROVAL (JAN 2026)</div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '20px' }}>
-              <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(239,68,68,0.08)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
-                <div style={{ fontSize: '48px', fontWeight: '800', color: '#ef4444', lineHeight: 1 }}>39%</div>
-                <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '8px' }}>Overall Approval</div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>CNN/SSRS Jan 2026</div>
-              </div>
+              {/* Approve - GREEN */}
               <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(34,197,94,0.08)', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.2)' }}>
-                <div style={{ fontSize: '48px', fontWeight: '800', color: '#6b6b7b', lineHeight: 1 }}>56%</div>
+                <div style={{ fontSize: '48px', fontWeight: '800', color: '#22c55e', lineHeight: 1 }}>39%</div>
+                <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '8px' }}>Overall Approval</div>
+                {/* Proportional vertical bar */}
+                <div style={{ marginTop: '12px', height: '100px', background: '#1a1a22', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', overflow: 'hidden' }}>
+                  <div style={{ height: '39%', background: 'linear-gradient(180deg, #22c55e 0%, #16a34a 100%)', borderRadius: '8px 8px 0 0' }} />
+                </div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '8px' }}>CNN/SSRS Jan 2026</div>
+              </div>
+              {/* Disapprove - RED */}
+              <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(239,68,68,0.08)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
+                <div style={{ fontSize: '48px', fontWeight: '800', color: '#ef4444', lineHeight: 1 }}>56%</div>
                 <div style={{ fontSize: '12px', color: '#6b6b7b', marginTop: '8px' }}>Disapproval</div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '4px' }}>Civiqs Jan 28, 2026</div>
+                {/* Proportional vertical bar */}
+                <div style={{ marginTop: '12px', height: '100px', background: '#1a1a22', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', overflow: 'hidden' }}>
+                  <div style={{ height: '56%', background: 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)', borderRadius: '8px 8px 0 0' }} />
+                </div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '8px' }}>Civiqs Jan 28, 2026</div>
               </div>
             </div>
 
@@ -1489,12 +1533,12 @@ function App() {
             <div style={{ fontSize: '14px', color: '#fff', fontWeight: '600', marginBottom: '16px' }}>Recent Poll Results (Jan 2026)</div>
             
             {[
-              { pollster: 'Fox News', approve: 44, disapprove: 56, date: 'Jan 23-26', color: '#ef4444' },
-              { pollster: 'Emerson', approve: 41, disapprove: 50, date: 'Jan 2026', color: '#f97316' },
-              { pollster: 'CNN/SSRS', approve: 39, disapprove: 61, date: 'Jan 2026', color: '#eab308' },
-              { pollster: 'Marist', approve: 38, disapprove: 56, date: 'Jan 12-13', color: '#22c55e' },
-              { pollster: 'Reuters/Ipsos', approve: 38, disapprove: 58, date: 'Jan 2026', color: '#3b82f6' },
-              { pollster: 'Civiqs', approve: 39, disapprove: 56, date: 'Jan 28', color: '#a855f7' },
+              { pollster: 'Fox News', approve: 44, disapprove: 56, date: 'Jan 23-26' },
+              { pollster: 'Emerson', approve: 41, disapprove: 50, date: 'Jan 2026' },
+              { pollster: 'CNN/SSRS', approve: 39, disapprove: 61, date: 'Jan 2026' },
+              { pollster: 'Marist', approve: 38, disapprove: 56, date: 'Jan 12-13' },
+              { pollster: 'Reuters/Ipsos', approve: 38, disapprove: 58, date: 'Jan 2026' },
+              { pollster: 'Civiqs', approve: 39, disapprove: 56, date: 'Jan 28' },
             ].map((poll, i) => (
               <div key={i} style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -1502,11 +1546,11 @@ function App() {
                   <span style={{ fontSize: '10px', color: '#4a4a5a' }}>{poll.date}</span>
                 </div>
                 <div style={{ display: 'flex', height: '24px', borderRadius: '4px', overflow: 'hidden', background: '#0a0a0f' }}>
-                  <div style={{ width: `${poll.approve}%`, background: poll.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: `${poll.approve}%`, background: 'linear-gradient(90deg, #22c55e 0%, #16a34a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ fontSize: '10px', fontWeight: '600', color: '#fff' }}>{poll.approve}%</span>
                   </div>
-                  <div style={{ width: `${poll.disapprove}%`, background: '#3a3a4a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#888' }}>{poll.disapprove}%</span>
+                  <div style={{ width: `${poll.disapprove}%`, background: 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '600', color: '#fff' }}>{poll.disapprove}%</span>
                   </div>
                 </div>
               </div>
@@ -1590,23 +1634,39 @@ function App() {
         {activeTab === 'epstein' && <>
           <PageHeader title="Epstein Files" subtitle="What the released documents reveal about Trump's connections" />
           
-          {/* Breaking News Banner */}
-          <Card style={{ marginBottom: '24px', border: '1px solid rgba(245,158,11,0.4)', background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, #13131a 100%)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '9px', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#f59e0b', color: '#000', animation: 'pulse 2s infinite' }}>BREAKING</span>
-              <span style={{ fontSize: '12px', color: '#fcd34d', fontWeight: '600' }}>DOJ Releases 3 Million More Pages</span>
-            </div>
-            <p style={{ fontSize: '14px', color: '#d4d4dc', lineHeight: 1.7, margin: '0 0 12px 0' }}>
-              The Department of Justice released over 3 million pages of Epstein files today (Jan 30, 2026), more than a month after the legal deadline. They are withholding another 2.5 million pages.
-            </p>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <a href="https://www.npr.org/2026/01/30/nx-s1-5693904/epstein-files-doj-trump" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>NPR</a>
-              <span style={{ color: '#3a3a4a' }}>•</span>
-              <a href="https://www.nbcnews.com/politics/justice-department/live-blog/epstein-files-trump-doj-release-live-updates-rcna256639" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>NBC News</a>
-              <span style={{ color: '#3a3a4a' }}>•</span>
-              <a href="https://www.aljazeera.com/news/2026/1/30/us-department-of-justice-releases-three-million-new-epstein-documents" target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', color: '#6b6b7b', textDecoration: 'underline' }}>Al Jazeera</a>
-            </div>
-          </Card>
+          {/* Breaking News Banner - DYNAMIC */}
+          {(() => {
+            const epsteinNews = getLatestBreakingNews(data.breakingNews, 'epstein');
+            return (
+              <Card style={{ marginBottom: '24px', border: '1px solid rgba(245,158,11,0.4)', background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, #13131a 100%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '9px', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#f59e0b', color: '#000' }}>
+                    {epsteinNews ? formatRelativeDate(epsteinNews.date) : 'LATEST'}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#fcd34d', fontWeight: '600' }}>
+                    {epsteinNews?.headline || 'DOJ Releases Epstein Files'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '14px', color: '#d4d4dc', lineHeight: 1.7, margin: '0 0 12px 0' }}>
+                  {epsteinNews?.summary || 'The Department of Justice has been releasing Epstein files under court order. They continue to withhold millions of pages.'}
+                </p>
+                <div style={{ fontSize: '10px', color: '#4a4a5a' }}>
+                  Sources: {epsteinNews?.sources?.length > 0 ? (
+                    epsteinNews.sources.map((s, i) => (
+                      <span key={i}>
+                        {i > 0 && <span style={{ color: '#3a3a4a', margin: '0 4px' }}>•</span>}
+                        {s.url ? (
+                          <a href={s.url} target="_blank" rel="noopener noreferrer" style={{ color: '#6b6b7b', textDecoration: 'underline' }}>{s.name}</a>
+                        ) : (
+                          <span style={{ color: '#6b6b7b' }}>{s.name || s}</span>
+                        )}
+                      </span>
+                    ))
+                  ) : 'NPR • NBC News • Al Jazeera'}
+                </div>
+              </Card>
+            );
+          })()}
 
           {/* Key Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
@@ -1620,7 +1680,7 @@ function App() {
             </div>
             <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(168,85,247,0.08)', borderRadius: '12px', border: '1px solid rgba(168,85,247,0.2)' }}>
               <div style={{ fontSize: '28px', fontWeight: '700', color: '#a855f7' }}>3M+</div>
-              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Pages Released Today</div>
+              <div style={{ fontSize: '10px', color: '#6b6b7b', marginTop: '4px' }}>Pages Released Jan 30</div>
             </div>
             <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(107,107,123,0.1)', borderRadius: '12px', border: '1px solid rgba(107,107,123,0.2)' }}>
               <div style={{ fontSize: '28px', fontWeight: '700', color: '#6b6b7b' }}>2.5M</div>
