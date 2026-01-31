@@ -55,6 +55,107 @@ function getLatestBreakingNews(breakingNews, category) {
   return sorted[0] || null;
 }
 
+// ==================== SOURCE URL MAPPING ====================
+// Maps source names to their URLs for clickable links
+
+const SOURCE_URLS = {
+  // Major news
+  'NPR': 'https://www.npr.org',
+  'AP News': 'https://apnews.com',
+  'Reuters': 'https://www.reuters.com',
+  'Washington Post': 'https://www.washingtonpost.com',
+  'New York Times': 'https://www.nytimes.com',
+  'NYT': 'https://www.nytimes.com',
+  'CNN': 'https://www.cnn.com',
+  'CBS News': 'https://www.cbsnews.com',
+  'NBC News': 'https://www.nbcnews.com',
+  'ABC News': 'https://www.abcnews.go.com',
+  'PBS': 'https://www.pbs.org',
+  'Al Jazeera': 'https://www.aljazeera.com',
+  'Axios': 'https://www.axios.com',
+  'Politico': 'https://www.politico.com',
+  'The Hill': 'https://thehill.com',
+  'BBC': 'https://www.bbc.com',
+  
+  // Business/Finance
+  'Bloomberg': 'https://www.bloomberg.com',
+  'CNBC': 'https://www.cnbc.com',
+  'Forbes': 'https://www.forbes.com',
+  'Fortune': 'https://fortune.com',
+  'WSJ': 'https://www.wsj.com',
+  'Wall Street Journal': 'https://www.wsj.com',
+  'MarketWatch': 'https://www.marketwatch.com',
+  'Financial Times': 'https://www.ft.com',
+  'Goldman Sachs': 'https://www.goldmansachs.com',
+  'Deloitte': 'https://www.deloitte.com',
+  
+  // Government/Official
+  'Treasury Dept': 'https://home.treasury.gov',
+  'U.S. Treasury': 'https://fiscaldata.treasury.gov',
+  'BLS': 'https://www.bls.gov',
+  'EIA': 'https://www.eia.gov',
+  'Federal Reserve': 'https://www.federalreserve.gov',
+  'GAO': 'https://www.gao.gov',
+  'DOJ': 'https://www.justice.gov',
+  'DOJ Records': 'https://www.justice.gov',
+  'Supreme Court': 'https://www.supremecourt.gov',
+  'Federal Court Records': 'https://www.uscourts.gov',
+  'Senate Banking Committee': 'https://www.banking.senate.gov',
+  
+  // Legal/Watchdog
+  'ACLU': 'https://www.aclu.org',
+  'CREW': 'https://www.citizensforethics.org',
+  'Citizens for Ethics': 'https://www.citizensforethics.org',
+  'Just Security': 'https://www.justsecurity.org',
+  'SCOTUSblog': 'https://www.scotusblog.com',
+  'Ballotpedia': 'https://ballotpedia.org',
+  'PolitiFact': 'https://www.politifact.com',
+  'Vera Institute': 'https://www.vera.org',
+  'Brennan Center': 'https://www.brennancenter.org',
+  
+  // Other
+  'Wikipedia': 'https://en.wikipedia.org',
+  'Government Executive': 'https://www.govexec.com',
+  'Rutgers Law': 'https://law.rutgers.edu',
+  'House Oversight': 'https://oversight.house.gov',
+  'American Oversight': 'https://www.americanoversight.org',
+  'Center for American Progress': 'https://www.americanprogress.org',
+  'CAP': 'https://www.americanprogress.org',
+  'NAM': 'https://www.nam.org',
+  'Newsweek': 'https://www.newsweek.com',
+  'Time Magazine': 'https://time.com',
+  'HuffPost': 'https://www.huffpost.com',
+  'CBC': 'https://www.cbc.ca',
+  'Daily Beast': 'https://www.thedailybeast.com',
+  'Court Records': 'https://www.uscourts.gov',
+  'Committee to Protect Journalists': 'https://cpj.org',
+  'PEN America': 'https://pen.org',
+  'EDF': 'https://www.edf.org',
+};
+
+// Helper to render sources as clickable links
+function renderSourceLinks(sources, linkStyle = {}) {
+  if (!sources || sources.length === 0) return null;
+  
+  const defaultStyle = { color: '#6b6b7b', textDecoration: 'underline', ...linkStyle };
+  
+  return sources.map((source, i) => {
+    const sourceName = typeof source === 'string' ? source : source.name;
+    const sourceUrl = typeof source === 'object' && source.url ? source.url : SOURCE_URLS[sourceName];
+    
+    return (
+      <span key={i}>
+        {i > 0 && <span style={{ color: '#3a3a4a', margin: '0 4px' }}>•</span>}
+        {sourceUrl ? (
+          <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={defaultStyle}>{sourceName}</a>
+        ) : (
+          <span style={{ color: '#6b6b7b' }}>{sourceName}</span>
+        )}
+      </span>
+    );
+  });
+}
+
 // ==================== ERROR BOUNDARY (Priority Action #3) ====================
 // Catches JavaScript errors anywhere in child component tree and displays fallback UI
 
@@ -782,7 +883,7 @@ function App() {
                   <p style={{ fontSize: '14px', color: '#d4d4dc', margin: 0, lineHeight: 1.6 }}>{p.reality}</p>
                 )}
               </div>
-              <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {(p.sources || []).join(' • ')}</div>
+              <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(p.sources)}</div>
             </Card>
           ))}
         </>}
@@ -828,7 +929,7 @@ function App() {
                       {concern.quoteSource && <div style={{ fontSize: '11px', color: '#6b6b7b', marginTop: '6px' }}>— {concern.quoteSource}</div>}
                     </div>
                   )}
-                  <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {(concern.sources || []).join(' • ')}</div>
+                  <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(concern.sources)}</div>
                 </Card>
               );
             })
@@ -852,7 +953,7 @@ function App() {
                     Article III establishes the judiciary as a co-equal branch. Executive defiance of court orders undermines judicial review—a cornerstone of constitutional checks and balances since Marbury v. Madison (1803).
                   </p>
                 </div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Washington Post • AP News • Just Security</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(['Washington Post', 'AP News', 'Just Security'])}</div>
               </Card>
 
               {/* Due Process */}
@@ -872,7 +973,7 @@ function App() {
                     "No person shall be... deprived of life, liberty, or property, without due process of law." — Fifth Amendment
                   </p>
                 </div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: ACLU • Politico • Just Security</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(['ACLU', 'Politico', 'Just Security'])}</div>
               </Card>
 
               {/* Birthright Citizenship */}
@@ -893,7 +994,7 @@ function App() {
                     "All persons born or naturalized in the United States, and subject to the jurisdiction thereof, are citizens." — 14th Amendment
                   </p>
                 </div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Ballotpedia • SCOTUSblog • Rutgers Law</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(['Ballotpedia', 'SCOTUSblog', 'Rutgers Law'])}</div>
               </Card>
 
               {/* First Amendment */}
@@ -907,7 +1008,7 @@ function App() {
                     Two U.S. citizens shot by federal agents at immigration protests. AP, NPR, PBS sued over press access bans. Calls to revoke licenses of critical networks.
                   </p>
                 </div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Committee to Protect Journalists • PEN America • NPR</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(['Committee to Protect Journalists', 'PEN America', 'NPR'])}</div>
               </Card>
 
               {/* January 6 Pardons */}
@@ -921,7 +1022,7 @@ function App() {
                     Pardoned 1,500+ individuals convicted of Capitol attack crimes, including those who assaulted police officers and seditious conspiracy convicts.
                   </p>
                 </div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: DOJ Records • NPR • AP News</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(['DOJ Records', 'NPR', 'AP News'])}</div>
               </Card>
 
               {/* Equal Protection Violation */}
@@ -936,7 +1037,7 @@ function App() {
                     Court ruled DOE cancelled grants based on whether recipients lived in states that voted for Trump in 2024—"purposeful segregation based on electoral support."
                   </p>
                 </div>
-                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: EDF • Federal Court Decision (Jan 12, 2026)</div>
+                <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(['EDF', 'Federal Court Records'])}</div>
               </Card>
             </>
           )}
@@ -1374,7 +1475,7 @@ function App() {
                   </div>
                 )}
                 {v.sources && v.sources.length > 0 && (
-                  <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {v.sources.join(' • ')}</div>
+                  <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(v.sources)}</div>
                 )}
               </Card>
             ))}
@@ -1758,7 +1859,7 @@ function App() {
                 A 2012 message found in the files asks: "What does JE think of going to Mar-a-Lago after xmas instead of his island?"
               </p>
             </div>
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: CBS News • Wikipedia • Court Records</div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(['CBS News', 'Wikipedia', 'Court Records'])}</div>
           </Card>
 
           {/* Conflict of Interest */}
@@ -1778,7 +1879,7 @@ function App() {
                 "We didn't protect President Trump. We didn't protect or not protect anybody."
               </p>
             </div>
-            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: Daily Beast • NPR • ABC News</div>
+            <div style={{ fontSize: '10px', color: '#4a4a5a', marginTop: '12px' }}>Sources: {renderSourceLinks(['Daily Beast', 'NPR', 'ABC News'])}</div>
           </Card>
 
           {/* Timeline */}
